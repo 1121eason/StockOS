@@ -1,0 +1,11 @@
+# RegimeOutputV1.1 — mandatory atomic downstream envelope
+
+Any future valuation, backtest, Opportunity Score or AI consumer MUST receive and validate the complete envelope. It MUST NOT consume confirmed_regime, primary_regime or a single probability alone. No decision rules for any such future module are implemented or implied.
+
+Required: contract_version, policy_version, snapshot timestamp, forecast_run_id, confirmed_regime, candidate_regime, all five regime probabilities, transition_status, cycle_score, evidence_confidence, data_quality_confidence, history_sufficiency, composite_confidence, candidate_probability, probability_gap_to_second_candidate, reason_codes and transition counter state. Nullable cycle_score means unavailable, never zero. All confidence/probability values are bounded fractions; the vector sums exactly to one.
+
+Confirmed is persistence-approved; candidate reflects current fundamental evidence. Their disagreement MUST survive transport, caching and presentation. LOW_CONFIDENCE is transition metadata, not a sixth business regime. Structural zero weight denotes guard ineligibility, not proof of no structural risk. For STRONG_OVERRIDE_PENDING_GUARD, include blocked_regime and structural guard details. STABLE is not an investment recommendation.
+
+Use the provided validator/serializer. Reject missing fields or legacy confirmed-only payloads rather than silently defaulting. Keep as-of, policy and forecast identity together: components from different snapshots/versions cannot be combined. Preserve input_lineage and quality diagnostics in the auditable snapshot; history sufficiency includes raw counts and its explicitly separate multiplier. Existing confidence and primary_regime columns are compatibility aliases of composite_confidence and confirmed_regime for the new version, not a permitted minimal consumer API.
+
+New CLI JSON uses this contract. Original V1 snapshots remain available under their original policy and legacy commands/archives; they are never silently relabelled V1.1. Historical forecasts/regimes are research reconstructions, not contemporaneously published observations. This contract does not authorize AI Analyst, trading rules, returns optimization, valuation multiple calibration or another milestone.

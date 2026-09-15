@@ -1,0 +1,30 @@
+{
+  "source_url": "https://nvidianews.nvidia.com/news/nvidia-announces-financial-results-for-second-quarter-fiscal-2027",
+  "period": "FY2027-Q2",
+  "publication_date": "2026-08-26",
+  "period_end": "2026-07-26",
+  "unit": "USD except ratio and EPS",
+  "method": "Official tables independently read and compared with persisted parser output. Not fabricated test data.",
+  "reported": {
+    "revenue": "96221000000",
+    "gross_margin_reported": "0.750",
+    "operating_income": "63734000000",
+    "eps_diluted": "2.46",
+    "ocf": "24077000000",
+    "capex": "2677000000",
+    "accounts_receivable": "63059000000",
+    "inventory": "31575000000",
+    "company_reported_fcf": "21341000000",
+    "equipment_principal_payments": "59000000"
+  },
+  "engine_fcf": "21400000000",
+  "data_center_revenue_rounded": "89000000000",
+  "next_quarter_guidance": {
+    "revenue_mid": "108000000000",
+    "revenue_low": "105840000000",
+    "revenue_high": "110160000000",
+    "gross_margin_mid": "0.74",
+    "gross_margin_low": "0.735",
+    "gross_margin_high": "0.745"
+  }
+}
