@@ -1,0 +1,3 @@
+version: 1
+environments: []
+# Configure a GitHub Actions or Manual profile before deployment.
