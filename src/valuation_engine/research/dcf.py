@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from typing import Any
 
-from valuation_engine.research.forecast import fcff_proxy
+from valuation_engine.research.cashflows import fcff_proxy as fcff_proxy
 from valuation_engine.research.numbers import POLICY, D, MarketEquityShares, bound, p, total
 
 

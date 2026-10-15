@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict, field_validator
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from valuation_engine.calendar_math import prior_period as prior_period
 from valuation_engine.db.schema import FinancialFact, QuarterlySnapshot
 from valuation_engine.db.store import digest
 from valuation_engine.hardening.availability import AvailabilityResolver
@@ -44,11 +45,6 @@ class Quarter(BaseModel):
     def value(self, metric: str) -> Decimal | None:
         obs = self.metrics.get(metric)
         return obs.value if obs else None
-
-
-def prior_period(fy: int, fq: int, offset: int = 1) -> tuple[int, int]:
-    n = fy * 4 + fq - 1 - offset
-    return n // 4, n % 4 + 1
 
 
 class PointInTimeRepository:

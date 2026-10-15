@@ -39,7 +39,7 @@ class FusedDecisionResult:
     action: str  # "STRONG_ACCUMULATE", "OVERWEIGHT", "NEUTRAL_TILT", "CORE_ONLY", "CAPITAL_PRESERVATION"
     primary_rationale: str
     
-    # 4-Pillar Decomposition & Adjustments
+    # Nominal pillar adjustments; the final regime-cap correction is in audit_trail.
     base_valuation_weight: float
     regime_adjustment: float
     revision_adjustment: float
@@ -97,10 +97,10 @@ class SignalFusionEngine:
         # 2. Regime Modulation
         regime_adj = 0.0
         regime_summary = {}
+        cap = self.REGIME_WEIGHT_CAPS.get(regime.confirmed_regime, 1.00) if regime else 1.00
         if regime:
             regime_summary = asdict(regime)
             # Check regime cap
-            cap = self.REGIME_WEIGHT_CAPS.get(regime.confirmed_regime, 1.00)
             if effective_weight > cap:
                 regime_adj = cap - effective_weight
                 effective_weight = cap
@@ -154,8 +154,16 @@ class SignalFusionEngine:
                 f"Tail Risk Pillar: Heavy downside challenge haircut ({valuation.tail_risk_haircut:.2f}) applies 10% risk haircut."
             )
 
+        # Reapply the hard regime cap after bonuses and adjustment floors.
+        if regime and effective_weight > cap:
+            audit_trail.append(
+                f"Final Regime Guard: Confirmed regime '{regime.confirmed_regime}' caps post-adjustment equity "
+                f"from {effective_weight*100:.0f}% to {cap*100:.0f}% "
+                f"(reduction of {(effective_weight-cap)*100:.0f} percentage points)."
+            )
+
         # Final clamping and action labeling
-        final_equity_w = round(max(0.0, min(1.0, effective_weight)), 2)
+        final_equity_w = round(max(0.0, min(1.0, cap, effective_weight)), 2)
         final_cash_w = round(1.0 - final_equity_w, 2)
 
         if final_equity_w >= 0.95:
