@@ -1,12 +1,16 @@
 """
-StockOS Production Quarterly Cadence Pipeline Engine.
-Automates the quarterly research cycle from SEC filing ingestion to formal valuation snapshot,
-with a strict Human Review Gate and fail-safe Quant Baseline downgrade protection.
+StockOS read-only quarterly cadence pipeline.
+
+Missing or invalid valuation inputs fail before bridge/fusion; zero or negative DCF
+values remain valid. Snapshot persistence is not implemented, so only dry runs work.
+The hardcoded regime, latest-revision aggregation and global review-count gate remain
+prototype limitations; these input guards do not establish production readiness.
 """
 
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 import json
+import math
 import os
 from pathlib import Path
 import sqlite3
@@ -18,6 +22,20 @@ from valuation_engine.decision.signal_fusion import (
     SignalFusionEngine,
 )
 from valuation_engine.valuation.bridge import ValuationBridgeResult, ValuationBridgeV2
+
+
+def _finite_number(value: Any, name: str) -> float:
+    """Read a numeric input without turning absent or malformed data into a baseline."""
+    message = f"{name} must be a finite number"
+    if isinstance(value, bool) or not isinstance(value, (int, float, str)):
+        raise ValueError(message)
+    try:
+        number = float(value)
+    except (ValueError, OverflowError) as exc:
+        raise ValueError(message) from exc
+    if not math.isfinite(number):
+        raise ValueError(message)
+    return number
 
 
 @dataclass
@@ -70,16 +88,18 @@ class QuarterlyCadencePipeline:
         self.fusion = SignalFusionEngine()
 
     def run(self) -> CadencePipelineResult:
+        if not self.config.dry_run:
+            raise NotImplementedError(
+                "dry_run=False is unsupported: snapshot persistence is not implemented"
+            )
+
         audit_log: List[str] = []
         stages_executed: List[str] = []
         quarter_str = f"FY{self.config.fiscal_year}-Q{self.config.fiscal_quarter}"
         as_of_dt = self.config.as_of_date
 
         audit_log.append(f"Starting Quarterly Cadence Pipeline for {self.config.ticker} {quarter_str} (As of {as_of_dt})")
-        if self.config.dry_run:
-            audit_log.append("Mode: DRY-RUN (No database mutations will be committed).")
-        else:
-            audit_log.append("Mode: APPLY (Formal snapshot commit authorized).")
+        audit_log.append("Mode: DRY-RUN (No database mutations will be committed).")
 
         # -------------------------------------------------------------
         # Stage 1: Verify Ingestion & Filing Existence
@@ -100,8 +120,6 @@ class QuarterlyCadencePipeline:
         # Stage 4 & 5: Baseline Forecast & Quant Valuation
         # -------------------------------------------------------------
         stages_executed.append("3_QUANT_VALUATION_BASELINE")
-        market_price = 0.0
-        quant_dcf = 0.0
         implied_growth = None
         guidance_revision = 0.0
 
@@ -114,13 +132,27 @@ class QuarterlyCadencePipeline:
                 (f"{as_of_dt}%",),
             ).fetchone()
 
-            if row:
-                quant_dcf = float(row[0]) if row[0] is not None else 0.0
-                meta = json.loads(row[1]) if row[1] else {}
-                market_price = float(meta.get("price", 0.0))
-                rdcf = meta.get("reverse_dcf", {})
-                if rdcf and "implied_growth" in rdcf:
-                    implied_growth = float(rdcf["implied_growth"])
+            if row is None:
+                raise ValueError(f"No quantitative valuation found for {as_of_dt}")
+            quant_dcf = _finite_number(row[0], "dcf_base")
+            try:
+                meta = json.loads(row[1])
+            except (TypeError, ValueError) as exc:
+                raise ValueError("metadata_json must be a JSON object") from exc
+            if not isinstance(meta, dict):
+                raise ValueError("metadata_json must be a JSON object")
+            market_price = _finite_number(meta.get("price"), "price")
+            if market_price <= 0.0:
+                raise ValueError("price must be greater than zero")
+
+            rdcf = meta.get("reverse_dcf")
+            if rdcf is not None:
+                if not isinstance(rdcf, dict):
+                    raise ValueError("reverse_dcf must be a JSON object or null")
+                if rdcf.get("status") != "unavailable" and rdcf.get("implied_growth") is not None:
+                    implied_growth = _finite_number(
+                        rdcf["implied_growth"], "reverse_dcf.implied_growth"
+                    )
 
             # Check guidance revision if available
             rev_row = c.execute(
@@ -134,11 +166,6 @@ class QuarterlyCadencePipeline:
                     pct = rev_metrics.get("percentage_revision")
                     if pct is not None:
                         guidance_revision = max(guidance_revision, float(pct))
-
-        if market_price <= 0.0:
-            market_price = 100.0
-        if quant_dcf <= 0.0:
-            quant_dcf = market_price * 0.95
 
         quant_gap = (quant_dcf - market_price) / market_price if market_price > 0 else 0.0
         audit_log.append(f"Stage 3 PASS: Quant Baseline DCF = ${quant_dcf:.2f}, Market Price = ${market_price:.2f}, Quant Gap = {quant_gap:+.1%}")
@@ -251,13 +278,7 @@ class QuarterlyCadencePipeline:
         # Stage 9: Snapshot Commit or Quarantine
         # -------------------------------------------------------------
         stages_executed.append("7_COMMIT_OR_QUARANTINE")
-        if self.config.dry_run:
-            audit_log.append("Stage 7: DRY-RUN complete. Execution receipt generated without database mutation.")
-        else:
-            if pipeline_status == "SUCCESS_APPROVED":
-                audit_log.append("Stage 7: Snapshot committed to formal database.")
-            else:
-                audit_log.append("Stage 7: Unapproved features quarantined in candidate database.")
+        audit_log.append("Stage 7: DRY-RUN complete. Execution receipt generated without database mutation.")
 
         receipt_data = {
             "quarter": quarter_str,
