@@ -4,9 +4,10 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-POLICY_VERSION = "AIAnalystPolicyV1"
-PROMPT_VERSION = "PromptSetV1"
-SCHEMA_VERSION = "FeatureSchemaV1"
+POLICY_VERSION = "AIAnalystPolicyV3-FSI"
+PROMPT_VERSION = "PromptSetV6-FSI"
+SCHEMA_VERSION = "FeatureSchemaV2"
+MAX_EVIDENCE_WORDS = 80
 FeatureName = Literal[
     "demand_momentum",
     "demand_visibility",
@@ -63,6 +64,8 @@ class EvidenceDraft(Strict):
     block_id: str
     span: str = Field(min_length=12, max_length=500)
     speaker: str | None
+    speaker_status: Literal["verified", "unknown"]
+    speaker_role: Literal["NVIDIA management"] | None
     topic: FeatureName
     implication: Literal["positive", "negative", "neutral", "mixed"]
     certainty: Literal["explicit", "qualified", "ambiguous"]

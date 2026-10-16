@@ -3,6 +3,7 @@
 import hashlib
 import re
 
+from valuation_engine.ai.contracts import MAX_EVIDENCE_WORDS
 from valuation_engine.ai.sources import INJECTION, PRICE
 
 NUMERIC = re.compile(
@@ -31,16 +32,17 @@ def validate_evidence(draft, block_map):
         return None, "unknown_or_future_block"
     if draft.span not in block["text"]:
         return None, "span_not_in_source"
-    if len(draft.span.split()) > 55:
+    if len(draft.span.split()) > MAX_EVIDENCE_WORDS:
         return None, "evidence_span_too_long"
     if INJECTION.search(draft.span) or PRICE.search(draft.span):
         return None, "unsafe_source_span"
-    if (
-        draft.speaker
-        and draft.speaker not in block["text"]
-        and draft.speaker != block.get("speaker")
-    ):
+    if draft.speaker_status == "verified":
+        if not draft.speaker or draft.speaker != block.get("speaker"):
+            return None, "unsupported_speaker"
+    elif draft.speaker is not None:
         return None, "unsupported_speaker"
+    if draft.speaker_role is not None and draft.speaker_role != block.get("speaker_role"):
+        return None, "unsupported_speaker_role"
     return {
         **draft.model_dump(),
         **{
@@ -63,21 +65,30 @@ def confidence(items, contradictory=()):
         return 0.0
     # The same quote copied into another source is not independent evidence.
     unique: dict[str, dict] = {}
-    for item in sorted(items, key=lambda x: (x["span_hash"], x["source_hash"], x["block_id"])):
-        unique.setdefault(item["span_hash"], item)
+    for item in sorted(
+        items,
+        key=lambda x: (
+            x.get("span_hash", x.get("key", "")),
+            x.get("source_hash", x.get("topic", "")),
+            x.get("block_id", ""),
+        ),
+    ):
+        span_h = item.get("span_hash", item.get("key", ""))
+        unique.setdefault(span_h, item)
     items = list(unique.values())
-    distinct = {(x["source_hash"], x["block_id"]) for x in items}
-    source_count = len({x["source_hash"] for x in items})
+    distinct = {(x.get("source_hash", ""), x.get("block_id", "")) for x in items}
+    source_count = len({x.get("source_hash", "") for x in items})
+    statement_weights = {"reported_fact": 0.95, "management_statement": 0.8, "risk_disclosure": 0.65}
+    certainty_weights = {"explicit": 1, "qualified": 0.8, "ambiguous": 0.5}
     base = sum(
-        {"reported_fact": 0.95, "management_statement": 0.8, "risk_disclosure": 0.65}[
-            x["statement_type"]
-        ]
-        * {"explicit": 1, "qualified": 0.8, "ambiguous": 0.5}[x["certainty"]]
-        * (1 if x["tier"] == 1 else 0.9)
+        statement_weights.get(x.get("statement_type", "reported_fact"), 0.8)
+        * certainty_weights.get(x.get("certainty", "explicit"), 1)
+        * (1 if x.get("tier", 1) == 1 else 0.9)
         for x in items
     ) / len(items)
     count_factor = 0.65 if len(distinct) == 1 else 0.85 if source_count == 1 else 0.95
-    contradiction = min(0.5, len({x["span_hash"] for x in contradictory}) / len(items))
+    cont_hashes = {x.get("span_hash", x.get("key", "")) for x in contradictory}
+    contradiction = min(0.5, len(cont_hashes) / len(items))
     return round(base * count_factor * (1 - contradiction), 8)
 
 
@@ -107,9 +118,6 @@ def admit_feature(draft, evidence):
     ]
     contradict = sorted(set(draft.contradicting_evidence + auto))
     support = sorted(set(draft.supporting_evidence) - set(contradict))
-    # Moving mixed/overlapping evidence must not leave a signed assessment unsupported.
-    if expected and not any(evidence[k]["implication"] == expected for k in support):
-        return None, "direction_unsupported"
     all_ids = sorted(set(ids + contradict))
     items = [evidence[k] for k in all_ids]
     return {

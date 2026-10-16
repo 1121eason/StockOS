@@ -62,21 +62,36 @@ def save(path, value):
 
 
 def completed(db, quarter, provider="claude_cli", model=None):
-    return db.scalar(
+    from valuation_engine.db.schema import AIHumanReview
+
+    base_query = (
         select(AIAnalystSnapshot)
         .join(AIAnalysisRun)
+        .join(AIHumanReview, AIHumanReview.analysis_run_id == AIAnalysisRun.id, isouter=True)
         .where(
             AIAnalysisRun.company_id == 1,
             AIAnalysisRun.quarter == quarter,
             AIAnalysisRun.model_provider == provider,
             AIAnalysisRun.model_name == model if model is not None else true(),
         )
-        .order_by(AIAnalystSnapshot.id.asc())
     )
+    # Prefer PromptSetV6 snapshot if available
+    v6_candidate = db.scalar(
+        base_query.where(AIAnalysisRun.prompt_version == "PromptSetV6").order_by(
+            AIHumanReview.id.desc().nullslast(), AIAnalystSnapshot.id.asc()
+        )
+    )
+    if v6_candidate is not None:
+        return v6_candidate
+    return db.scalar(base_query.order_by(AIHumanReview.id.desc().nullslast(), AIAnalystSnapshot.id.asc()))
 
 
 def review_status(db, provider="claude_cli", model=None):
     selected = {q: completed(db, q, provider, model) for q in QUARTERS[:5]}
+    if all(s is None for s in selected.values()) and provider == "claude_cli":
+        codex_selected = {q: completed(db, q, "codex_cli", model) for q in QUARTERS[:5]}
+        if any(s is not None for s in codex_selected.values()):
+            selected = codex_selected
     reviews = []
     pending = []
     for quarter, snapshot in selected.items():
@@ -185,6 +200,24 @@ def compare(db, first, second):
             for c in db.scalars(select(AIChallenge).where(AIChallenge.analysis_run_id == run))
         }
 
+    def prompt_hashes(run):
+        return sorted(
+            (c.stage, c.request_hash)
+            for c in db.scalars(select(AIProviderCall).where(AIProviderCall.analysis_run_id == run))
+        )
+
+    def rejection_counts(run):
+        return dict(
+            sorted(
+                Counter(
+                    r.reason
+                    for r in db.scalars(
+                        select(AIUnsupportedClaim).where(AIUnsupportedClaim.analysis_run_id == run)
+                    )
+                ).items()
+            )
+        )
+
     x, y = spans(first), spans(second)
     af, bf = features(first), features(second)
     common = af.keys() & bf.keys()
@@ -195,6 +228,10 @@ def compare(db, first, second):
         "same_provider": a.model_provider == b.model_provider,
         "same_context": digest(a.context_json) == digest(b.context_json),
         "same_prompt_version": a.prompt_version == b.prompt_version,
+        "same_schema_version": a.schema_version == b.schema_version,
+        "same_exact_prompt_hashes": prompt_hashes(first) == prompt_hashes(second),
+        "same_package_hash": a.context_json.get("quarter_package_manifest", {}).get("package_hash")
+        == b.context_json.get("quarter_package_manifest", {}).get("package_hash"),
         "same_requested_model": a.model_name == b.model_name,
         "same_cli_version": a.settings_json["cli_version"] == b.settings_json["cli_version"],
         "evidence_jaccard": len(x & y) / len(x | y) if x | y else None,
@@ -213,6 +250,9 @@ def compare(db, first, second):
         "missing_from_second": sorted(af.keys() - bf.keys()),
         "opposite_sign_features": sorted(k for k in common if af[k] * bf[k] < 0),
         "challenge_dimension_jaccard": len(ac & bc) / len(ac | bc) if ac | bc else None,
+        "first_rejected_claims": rejection_counts(first),
+        "second_rejected_claims": rejection_counts(second),
+        "human_assessed_unsupported_formal_claims": None,
         "semantic_stability": "human_interpretation_required",
     }
 
