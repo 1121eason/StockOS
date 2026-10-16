@@ -5,13 +5,15 @@ import sqlite3
 from unittest.mock import Mock
 
 import pytest
+from test_cadence_formal_regime import CHECKPOINT, add_cohort, create_formal_database, sql_time
 
+from valuation_engine.cadence.formal_context import load_formal_context
 from valuation_engine.cadence.pipeline import CadencePipelineConfig, QuarterlyCadencePipeline
 from valuation_engine.decision.signal_fusion import (
     ForecastRevisionInput,
-    RegimeInput,
     SignalFusionEngine,
 )
+from valuation_engine.research.numbers import POLICY
 from valuation_engine.valuation.bridge import ValuationBridgeV2
 
 AS_OF = "2026-08-27"
@@ -22,17 +24,26 @@ QUARTER = "FY2027-Q2"
 def make_pipeline(tmp_path):
     def make(*, rows=(), reviews=0, revision=None, dry_run=True, require_human_review=True):
         path = tmp_path / "synthetic-qve.db"
+        create_formal_database(path)
+        add_cohort(path, valuation=False)
         with sqlite3.connect(path) as conn:
-            conn.executescript(
-                "CREATE TABLE research_valuations "
-                "(id INTEGER PRIMARY KEY, as_of_timestamp TEXT, dcf_base, metadata_json);"
-                "CREATE TABLE forecast_revisions (id INTEGER PRIMARY KEY, metadata_json TEXT);"
-                "CREATE TABLE ai_human_reviews (verdict TEXT);"
-            )
+            # Earlier values belong to another run and must never be a fallback
+            # for a corrupt selected formal valuation. Duplicate exact identities
+            # are separately rejected by the formal-cohort tests.
             conn.executemany(
-                "INSERT INTO research_valuations (as_of_timestamp, dcf_base, metadata_json) "
-                "VALUES (?, ?, ?)",
-                rows,
+                "INSERT INTO research_valuations (company_id, forecast_run_id, as_of_timestamp, "
+                "valuation_model_version, dcf_base, metadata_json) VALUES (?, ?, ?, ?, ?, ?)",
+                [
+                    (
+                        1,
+                        1 if i == len(rows) - 1 else 999,
+                        sql_time(CHECKPOINT) if at == AS_OF else at,
+                        POLICY["valuation_version"],
+                        dcf,
+                        meta,
+                    )
+                    for i, (at, dcf, meta) in enumerate(rows)
+                ],
             )
             conn.executemany("INSERT INTO ai_human_reviews VALUES (?)", [("correct",)] * reviews)
             if revision is not None:
@@ -61,6 +72,7 @@ def assert_invalid_before_decision(pipeline, message):
         pipeline.run()
     pipeline.bridge.evaluate.assert_not_called()
     pipeline.fusion.fuse.assert_not_called()
+    pipeline.fusion.fuse_formal.assert_not_called()
     assert pipeline.qve_db_path.read_bytes() == before
     assert not pipeline.candidate_db_path.exists()
 
@@ -233,9 +245,9 @@ def test_valid_baseline_preserves_existing_computations(make_pipeline, reviews, 
         market_implied_growth_rate=0.25,
         guidance_revenue_revision=0 if downgraded else 0.1,
     )
-    expected_decision = SignalFusionEngine().fuse(
+    expected_decision = SignalFusionEngine().fuse_formal(
         expected_valuation,
-        RegimeInput("Hypergrowth", "Hypergrowth", "STABLE", 0.85),
+        load_formal_context(pipeline.qve_db_path, "NVDA", QUARTER, AS_OF).regime,
         ForecastRevisionInput(0.1, 0.1, 0.1, "UPWARD"),
     )
     assert result.market_price == 200
@@ -280,5 +292,6 @@ def test_apply_mode_is_rejected_before_any_database_access(tmp_path, monkeypatch
     connect.assert_not_called()
     pipeline.bridge.evaluate.assert_not_called()
     pipeline.fusion.fuse.assert_not_called()
+    pipeline.fusion.fuse_formal.assert_not_called()
     assert not pipeline.qve_db_path.exists()
     assert not pipeline.candidate_db_path.exists()
