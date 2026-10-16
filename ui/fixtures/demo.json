@@ -1,0 +1,18 @@
+{
+  "mode": "demo",
+  "contract_version": "StockOSWorkspaceV1",
+  "fixture_version": "2026-10-16.1",
+  "companies": [
+    {"id":"aurora","symbol":"AUR","name":"雲曜運算","english_name":"Aurora Compute","sector":"運算基礎設施","description":"虛構公司 · 成長情境","cashflows":[100,115,130,145,160],"cash":120,"debt":80,"shares":100,"wacc":10,"terminal_growth":2.5,"growth":0},
+    {"id":"atlas","symbol":"ATL","name":"衡川半導體","english_name":"Atlas Semiconductor","sector":"半導體設備","description":"虛構公司 · 負股權情境","cashflows":[12,14,16,18,20],"cash":10,"debt":550,"shares":100,"wacc":10,"terminal_growth":2.5,"growth":0},
+    {"id":"empty","symbol":"NEW","name":"尚未建立研究","english_name":"Empty workspace","sector":"未分類","description":"體驗缺值與空白狀態","cashflows":null,"cash":null,"debt":null,"shares":null,"wacc":10,"terminal_growth":2.5,"growth":0}
+  ],
+  "snapshot":{"as_of":"2025-09-30T20:00:00Z","checkpoint":"2025-10-01T08:00:00Z","source":"內建合成 fixture，不是財報或報價","price":null,"currency":"USD","financial_unit":"million","shares_unit":"million","run_id":null,"company_id":null},
+  "evidence":[
+    {"id":"demo-fcff","title":"現金流路徑","status":"unverified","detail":"五年 FCFF 為人工設定的合成數字；未經財報調節或研究驗證。","source":"ui/fixtures/demo.json","timestamp":"2025-09-30T20:00:00Z"},
+    {"id":"demo-regime","title":"正式 Regime","status":"missing","detail":"缺少 company / forecast run / checkpoint 綁定；不顯示正式狀態或信心分數。","source":"尚未連接正式 envelope","timestamp":null},
+    {"id":"demo-ai","title":"AI 質化證據","status":"quarantined","detail":"未綁定正式研究批次的 AI 內容維持隔離，不納入估值或決策。","source":"未載入 AI 結果","timestamp":null},
+    {"id":"demo-snapshot","title":"資料時點","status":"stale","detail":"合成快照刻意保留歷史日期，示範過期資料的呈現；不是最新市場資料。","source":"合成歷史快照","timestamp":"2025-09-30T20:00:00Z"},
+    {"id":"demo-price","title":"市場價格與報酬","status":"unavailable","detail":"沒有已驗證的報價來源，因此不計算價格差距、預期報酬或交易訊號。","source":"未連接報價來源","timestamp":null}
+  ]
+}

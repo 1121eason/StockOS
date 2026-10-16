@@ -13,3 +13,9 @@ data/*
 *.db-*
 dist/
 artifacts/
+
+# Optional UI development checks
+node_modules/
+
+# Machine-specific UI notes must remain local
+/LOCAL_UI_USAGE.md
