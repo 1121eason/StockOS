@@ -78,7 +78,7 @@ def create_formal_database(path):
         conn.executescript(
             "CREATE TABLE research_valuations (id INTEGER PRIMARY KEY, company_id INTEGER, "
             "forecast_run_id INTEGER, as_of_timestamp TEXT, valuation_model_version TEXT, dcf_base, metadata_json);"
-            "CREATE TABLE forecast_revisions (id INTEGER PRIMARY KEY, metadata_json TEXT);"
+            "CREATE TABLE forecast_revisions (id INTEGER PRIMARY KEY, created_at TEXT, identity_key TEXT, previous_run_id INTEGER, forecast_run_id INTEGER, metadata_json TEXT);"
             "CREATE TABLE ai_human_reviews (verdict TEXT);"
         )
 
@@ -241,7 +241,7 @@ def test_exact_and_unique_date_only_checkpoints(pipeline, checkpoint):
     pipeline.config.checkpoint_timestamp = checkpoint
     before = pipeline.qve_db_path.read_bytes()
     result = pipeline.run()
-    envelope = result.receipt_data["decision"]["regime_summary"]
+    envelope = result.receipt_data["regime_context"]
     assert envelope == context(pipeline).regime
     assert envelope["forecast_run_id"] == envelope["snapshot_id"] == 1
     assert envelope["checkpoint_timestamp"] == CHECKPOINT.isoformat()

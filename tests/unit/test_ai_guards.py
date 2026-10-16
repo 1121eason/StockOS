@@ -1,3 +1,5 @@
+import pytest
+
 from valuation_engine.ai.contracts import EvidenceDraft, FeatureDraft
 from valuation_engine.ai.guards import admit_feature, confidence, safe_narrative, validate_evidence
 from valuation_engine.ai.provider import strict_schema
@@ -65,6 +67,91 @@ def test_opposite_direction_and_numeric_claim_rejected():
     assert (
         admit_feature(draft, {"e": evidence()})[1] == "unverified_numeric_or_prohibited_narrative"
     )
+
+
+@pytest.mark.parametrize("value", [-0.4, 0.4])
+@pytest.mark.parametrize("include_neutral", [False, True])
+def test_signed_feature_needs_matching_support_after_mixed_evidence_moves(value, include_neutral):
+    items = {"mixed": evidence("mixed", "mixed")}
+    if include_neutral:
+        items["neutral"] = evidence("neutral", "neutral")
+    draft = FeatureDraft(
+        feature_name="demand_momentum",
+        feature_value=value,
+        time_horizon="unspecified",
+        supporting_evidence=list(items),
+        contradicting_evidence=[],
+        net_assessment="Demand outlook is uncertain.",
+    )
+
+    assert admit_feature(draft, items) == (None, "direction_unsupported")
+
+
+@pytest.mark.parametrize("value,implication", [(-0.4, "negative"), (0.4, "positive")])
+def test_signed_feature_rejects_matching_evidence_removed_by_role_overlap(value, implication):
+    draft = FeatureDraft(
+        feature_name="demand_momentum",
+        feature_value=value,
+        time_horizon="unspecified",
+        supporting_evidence=["e"],
+        contradicting_evidence=["e"],
+        net_assessment="Demand outlook requires attention.",
+    )
+
+    assert admit_feature(draft, {"e": evidence(implication)}) == (
+        None,
+        "direction_unsupported",
+    )
+
+
+@pytest.mark.parametrize("value,implication", [(-0.4, "negative"), (0.4, "positive")])
+def test_final_matching_support_retains_existing_contradictions_and_confidence(value, implication):
+    opposite = "positive" if implication == "negative" else "negative"
+    items = {
+        "support": evidence(implication, "support"),
+        "mixed": evidence("mixed", "mixed"),
+        "opposing": evidence(opposite, "opposing"),
+    }
+    draft = FeatureDraft(
+        feature_name="demand_momentum",
+        feature_value=value,
+        time_horizon="unspecified",
+        supporting_evidence=["support", "mixed"],
+        contradicting_evidence=[],
+        net_assessment="Demand outlook has conflicting evidence.",
+    )
+
+    admitted, reason = admit_feature(draft, items)
+
+    assert reason is None
+    assert admitted["feature_value"] == value
+    assert admitted["supporting_evidence"] == ["support"]
+    assert admitted["contradicting_evidence"] == ["mixed", "opposing"]
+    assert admitted["evidence_keys"] == ["mixed", "opposing", "support"]
+    assert admitted["evidence_count"] == 3
+    assert admitted["confidence"] == confidence(
+        list(items.values()), [items["mixed"], items["opposing"]]
+    )
+
+
+def test_evidence_backed_zero_remains_admissible_with_mixed_evidence():
+    draft = FeatureDraft(
+        feature_name="demand_momentum",
+        feature_value=0,
+        time_horizon="unspecified",
+        supporting_evidence=["mixed"],
+        contradicting_evidence=[],
+        net_assessment="Demand evidence is mixed.",
+    )
+    item = evidence("mixed", "mixed")
+
+    admitted, reason = admit_feature(draft, {"mixed": item})
+
+    assert reason is None
+    assert admitted["supporting_evidence"] == []
+    assert admitted["contradicting_evidence"] == ["mixed"]
+    assert admitted["feature_value"] == 0
+    assert admitted["confidence"] == confidence([item], [item])
 
 
 def test_strict_schema_disallows_unknown_fields():

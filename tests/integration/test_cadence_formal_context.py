@@ -15,17 +15,20 @@ from valuation_engine.hardening.basis import build_price_bases
 from valuation_engine.hardening.shares import add_share_observation
 from valuation_engine.regime.confidence import POLICY, snapshot_contract
 from valuation_engine.regime.service import replay
-from valuation_engine.research.service import build_forecast
+from valuation_engine.research.service import build_forecast, revisions
 from valuation_engine.research.valuation import build_valuation
 from valuation_engine.time import calculate_next_tradable_timestamp
 
 
-def test_cadence_reads_produced_formal_cohort_without_replay(db, synthetic, tmp_path, monkeypatch):
+@pytest.mark.parametrize("through", [(2024, 1), (2024, 4)])
+def test_cadence_reads_produced_formal_cohort_without_replay(
+    db, synthetic, tmp_path, monkeypatch, through
+):
     if db.get_bind().dialect.name != "sqlite":
         pytest.skip("Cadence currently supports read-only SQLite")
     path = Path(db.get_bind().url.database)
     assert path.is_relative_to(tmp_path)
-    releases = populate(synthetic, count=9)
+    releases = populate(synthetic, through=through, count=9)
     released, source = releases[-1]
     at = calculate_next_tradable_timestamp(released)
     add_share_observation(
@@ -69,6 +72,12 @@ def test_cadence_reads_produced_formal_cohort_without_replay(db, synthetic, tmp_
     checkpoint = run.forecast_as_of
     quarter = run.metadata_json["anchor"]
     valuation_id, snapshot_id = valuation.id, records[-1].id
+    produced_revision = revisions(db, run)
+    comparison = next(c for c in produced_revision["comparisons"] if c["new_label"] == "FY1")
+    if through == (2024, 4):
+        assert comparison["previous_label"] == "FY2"
+        assert comparison["new_label"] == "FY1"
+        assert comparison["target"] == "FY2025"
     db.commit()
     forbidden = Mock(side_effect=AssertionError("Cadence must never rebuild or replay"))
     monkeypatch.setattr("valuation_engine.regime.service.replay", forbidden)
@@ -79,6 +88,7 @@ def test_cadence_reads_produced_formal_cohort_without_replay(db, synthetic, tmp_
         fiscal_quarter=int(quarter[-1]),
         as_of_date=checkpoint.date().isoformat(),
         checkpoint_timestamp=checkpoint,
+        revision_target=comparison["target"],
         qve_db_path=path,
         candidate_db_path=tmp_path / "absent-candidate.db",
     )
@@ -89,5 +99,12 @@ def test_cadence_reads_produced_formal_cohort_without_replay(db, synthetic, tmp_
     assert actual["input_lineage"] == packs[-1]
     assert actual["snapshot_id"] == snapshot_id
     assert result.receipt_data["formal_context"]["valuation_id"] == valuation_id
+    actual_revision = result.receipt_data["forecast_revision"]
+    assert actual_revision["forecast_run_id"] == run.id
+    assert actual_revision["previous_run_id"] == produced_revision["previous_run_id"]
+    assert actual_revision["metrics"] == {
+        key: float(comparison["metrics"][key]["percentage_revision"])
+        for key in ("revenue", "eps", "free_cash_flow")
+    }
     assert path.read_bytes() == before
     forbidden.assert_not_called()

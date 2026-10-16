@@ -6,6 +6,7 @@ from unittest.mock import Mock
 
 import pytest
 from test_cadence_formal_regime import CHECKPOINT, add_cohort, create_formal_database, sql_time
+from test_cadence_revision_context import add_revision
 
 from valuation_engine.cadence.formal_context import load_formal_context
 from valuation_engine.cadence.pipeline import CadencePipelineConfig, QuarterlyCadencePipeline
@@ -155,8 +156,9 @@ def test_zero_and_negative_dcf_are_preserved(make_pipeline, dcf):
     assert result.receipt_data["valuation"]["quant_dcf_base"] == expected
     assert result.receipt_data["valuation"]["ai_fair_value_base"] == expected
     assert result.market_implied_growth_rate is None
-    assert result.recommended_action == "CORE_ONLY"
-    assert result.recommended_equity_weight == 0.4
+    assert result.recommended_action is None
+    assert result.recommended_equity_weight is None
+    assert result.pipeline_status == "INCOMPLETE_REVISION_CONTEXT"
 
 
 @pytest.mark.parametrize(
@@ -200,14 +202,17 @@ def test_invalid_reverse_dcf_growth_fails_before_decision(make_pipeline, growth)
 
 
 @pytest.mark.parametrize(("reviews", "require_review"), [(0, True), (35, True), (0, False)])
-def test_valid_baseline_preserves_existing_computations(make_pipeline, reviews, require_review):
+def test_valid_baseline_preserves_quant_computations_and_quarantines_unbound_ai(
+    make_pipeline, reviews, require_review
+):
     metadata = {"price": "200", "reverse_dcf": {"status": "converged", "implied_growth": "0.25"}}
     pipeline = make_pipeline(
         rows=[(AS_OF, "150", json.dumps(metadata))],
         reviews=reviews,
         require_human_review=require_review,
-        revision={"revisions": [{"metrics": {"revenue": {"percentage_revision": "0.10"}}}]},
     )
+    add_revision(pipeline.qve_db_path, values=(0.1, -0.2, 0.3))
+    pipeline.config.revision_target = "FY2027"
     with sqlite3.connect(pipeline.candidate_db_path) as conn:
         conn.executescript(
             "CREATE TABLE cohort_features (quarter TEXT, feature_name TEXT, "
@@ -225,7 +230,7 @@ def test_valid_baseline_preserves_existing_computations(make_pipeline, reviews, 
         )
     before = (pipeline.qve_db_path.read_bytes(), pipeline.candidate_db_path.read_bytes())
     result = pipeline.run()
-    downgraded = reviews == 0 and require_review
+    downgraded = True
     expected_valuation = ValuationBridgeV2().evaluate(
         quarter=QUARTER,
         as_of_date=AS_OF,
@@ -248,7 +253,7 @@ def test_valid_baseline_preserves_existing_computations(make_pipeline, reviews, 
     expected_decision = SignalFusionEngine().fuse_formal(
         expected_valuation,
         load_formal_context(pipeline.qve_db_path, "NVDA", QUARTER, AS_OF).regime,
-        ForecastRevisionInput(0.1, 0.1, 0.1, "UPWARD"),
+        ForecastRevisionInput(0.1, -0.2, 0.3, "UPWARD"),
     )
     assert result.market_price == 200
     assert result.quant_baseline_dcf == 150
@@ -258,7 +263,8 @@ def test_valid_baseline_preserves_existing_computations(make_pipeline, reviews, 
     assert result.pipeline_status == (
         "SUCCESS_DOWNGRADED_QUANT_ONLY" if downgraded else "SUCCESS_APPROVED"
     )
-    assert result.human_review_status == ("APPROVED" if reviews else "PENDING")
+    assert result.human_review_status == "PENDING"
+    assert result.receipt_data["human_review"]["ai_inputs_admitted"] is False
     assert result.ai_fair_value_base == (
         None if downgraded else expected_valuation.ai_fair_value_base
     )

@@ -3,23 +3,20 @@ StockOS read-only quarterly cadence pipeline.
 
 Missing or invalid valuation inputs fail before bridge/fusion; zero or negative DCF
 values remain valid. Snapshot persistence is not implemented, so only dry runs work.
-The latest-revision aggregation and global review-count gate remain
-prototype limitations; these input guards do not establish production readiness.
+Revisions require an explicit fiscal target and exact formal-run lineage. Legacy
+candidate AI rows remain quarantined until their admission/approval contract exists.
 """
 
 import json
 import math
-import sqlite3
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 from valuation_engine.cadence.formal_context import load_formal_context
-from valuation_engine.decision.signal_fusion import (
-    ForecastRevisionInput,
-    SignalFusionEngine,
-)
+from valuation_engine.cadence.revision_context import load_revision_context
+from valuation_engine.decision.signal_fusion import SignalFusionEngine
 from valuation_engine.valuation.bridge import ValuationBridgeV2
 
 
@@ -48,22 +45,23 @@ class CadencePipelineConfig:
     qve_db_path: Path | None = None
     candidate_db_path: Path | None = None
     checkpoint_timestamp: str | datetime | None = None
+    revision_target: str | None = None
 
 
 @dataclass
 class CadencePipelineResult:
     quarter: str
     as_of_date: str
-    pipeline_status: str  # "SUCCESS_APPROVED", "SUCCESS_DOWNGRADED_QUANT_ONLY", "FAILED"
+    pipeline_status: str  # "SUCCESS_DOWNGRADED_QUANT_ONLY", "INCOMPLETE_REVISION_CONTEXT"
     market_price: float
     quant_baseline_dcf: float
     quant_expectations_gap: float
     market_implied_growth_rate: float | None
     ai_fair_value_base: float | None
     ai_expectations_gap: float | None
-    recommended_action: str
-    recommended_equity_weight: float
-    recommended_cash_weight: float
+    recommended_action: str | None
+    recommended_equity_weight: float | None
+    recommended_cash_weight: float | None
     human_review_status: str  # "APPROVED", "PENDING", "REJECTED"
     stages_executed: list[str]
     audit_log: list[str]
@@ -75,8 +73,8 @@ class CadencePipelineResult:
 
 class QuarterlyCadencePipeline:
     """
-    Executes an end-to-end quarterly ingestion, valuation, and decision cycle
-    under auditable, reproducible, and fail-safe operational contracts.
+    Reads a stored quarterly formal cohort and emits a conditional quant-only decision.
+    Missing revision context withholds the decision; unbound AI remains quarantined.
     """
 
     def __init__(self, config: CadencePipelineConfig | None = None):
@@ -111,7 +109,7 @@ class QuarterlyCadencePipeline:
         stages_executed.append("1_INGESTION_VERIFICATION")
         if not self.qve_db_path.exists():
             raise FileNotFoundError(f"Formal database not found at {self.qve_db_path}")
-        audit_log.append("Stage 1 PASS: SEC 10-Q/10-K filing availability confirmed.")
+        audit_log.append("Stage 1: Formal database exists; no new filing ingestion was performed.")
 
         # -------------------------------------------------------------
         # Stage 2 & 3: Normalization & Quant Features Extraction
@@ -119,7 +117,7 @@ class QuarterlyCadencePipeline:
         stages_executed.append("2_NORMALIZATION_AND_FEATURES")
         # In a live runtime, queries PointInTimeRepository
         audit_log.append(
-            "Stage 2 PASS: Point-in-time financial facts normalized and YTD differencing verified."
+            "Stage 2: Reading stored formal inputs; normalization and YTD differencing were not rerun."
         )
 
         # -------------------------------------------------------------
@@ -127,7 +125,6 @@ class QuarterlyCadencePipeline:
         # -------------------------------------------------------------
         stages_executed.append("3_QUANT_VALUATION_BASELINE")
         implied_growth = None
-        guidance_revision = 0.0
 
         formal = load_formal_context(
             self.qve_db_path,
@@ -156,21 +153,11 @@ class QuarterlyCadencePipeline:
                     rdcf["implied_growth"], "reverse_dcf.implied_growth"
                 )
 
-        uri = f"file:{self.qve_db_path.resolve()}?mode=ro"
-        with sqlite3.connect(uri, uri=True) as conn:
-            c = conn.cursor()
-            # Check guidance revision if available
-            rev_row = c.execute(
-                "SELECT metadata_json FROM forecast_revisions ORDER BY id DESC LIMIT 1"
-            ).fetchone()
-            if rev_row and rev_row[0]:
-                rev_meta = json.loads(rev_row[0])
-                targets = rev_meta.get("revisions", [])
-                for t in targets:
-                    rev_metrics = t.get("metrics", {}).get("revenue", {})
-                    pct = rev_metrics.get("percentage_revision")
-                    if pct is not None:
-                        guidance_revision = max(guidance_revision, float(pct))
+        revision = load_revision_context(self.qve_db_path, formal, self.config.revision_target)
+        audit_log.append(
+            f"Forecast revision: {revision.receipt['status']}; target={self.config.revision_target}; "
+            f"reason={revision.receipt['reason']}"
+        )
 
         quant_gap = (quant_dcf - market_price) / market_price if market_price > 0 else 0.0
         audit_log.append(
@@ -183,103 +170,52 @@ class QuarterlyCadencePipeline:
         # Stage 6: AI Evidence & Challenge Extraction
         # -------------------------------------------------------------
         stages_executed.append("4_AI_EVIDENCE_EXTRACTION")
-        features: dict[str, tuple[float, float]] = {}
-        challenges: list[dict[str, Any]] = []
-
-        if self.candidate_db_path.exists():
-            cand_uri = f"file:{self.candidate_db_path.resolve()}?mode=ro"
-            with sqlite3.connect(cand_uri, uri=True) as c_conn:
-                cc = c_conn.cursor()
-                feat_rows = cc.execute(
-                    "SELECT feature_name, feature_value, confidence FROM cohort_features WHERE quarter = ?",
-                    (quarter_str,),
-                ).fetchall()
-                features = {r[0]: (float(r[1]), float(r[2])) for r in feat_rows}
-
-                chal_rows = cc.execute(
-                    "SELECT kind, target_variable, direction, description FROM cohort_challenges WHERE quarter = ?",
-                    (quarter_str,),
-                ).fetchall()
-                challenges = [
-                    {"kind": r[0], "target_variable": r[1], "direction": r[2], "description": r[3]}
-                    for r in chal_rows
-                ]
-
+        # The legacy cohort schema has no verified formal-run/admission binding.
+        # A review-count or require_human_review=False cannot supply that provenance.
+        candidate_present = self.candidate_db_path.exists()
         audit_log.append(
-            f"Stage 4 PASS: Extracted {len(features)} Guard G qualitative features and {len(challenges)} model challenges."
+            "Stage 4: Legacy AI candidate inputs quarantined; exact-run admission and approval "
+            "contracts are unavailable."
         )
 
-        # -------------------------------------------------------------
-        # Stage 7: Human Review Gate Check
-        # -------------------------------------------------------------
         stages_executed.append("5_HUMAN_REVIEW_GATE")
         human_review_status = "PENDING"
-        approved_cards_count = 0
-
-        with sqlite3.connect(uri, uri=True) as conn:
-            c = conn.cursor()
-            # Check ai_human_reviews table
-            hr_rows = c.execute(
-                "SELECT count(*) FROM ai_human_reviews WHERE verdict IN ('correct', 'partially_correct')"
-            ).fetchone()
-            if hr_rows and hr_rows[0] > 0:
-                approved_cards_count = hr_rows[0]
-                # In current system, 35 cards are recorded for the cohort
-                if approved_cards_count >= 35:
-                    human_review_status = "APPROVED"
-
+        review_receipt = {
+            "status": human_review_status,
+            "reason": "candidate_lineage_and_approval_contract_missing",
+            "candidate_database_present": candidate_present,
+            "require_human_review": self.config.require_human_review,
+            "ai_inputs_admitted": False,
+        }
         audit_log.append(
-            f"Human Review Gate: {approved_cards_count} approved review cards identified. Status = {human_review_status}"
+            "Human Review Gate: PENDING. Global review counts do not approve this candidate."
         )
 
-        # -------------------------------------------------------------
-        # Stage 8: Valuation Bridge & Signal Fusion
-        # -------------------------------------------------------------
         stages_executed.append("6_VALUATION_BRIDGE_AND_DECISION")
-        pipeline_status = "SUCCESS_APPROVED"
-
-        # Check if human review is required and unfulfilled
-        if self.config.require_human_review and human_review_status != "APPROVED":
+        bridge_res = self.bridge.evaluate(
+            quarter=quarter_str,
+            as_of_date=as_of_dt,
+            market_price=market_price,
+            quant_dcf_base=quant_dcf,
+            features={},
+            challenges=[],
+            market_implied_growth_rate=implied_growth,
+            guidance_revenue_revision=0.0,  # No AI growth channel to dampen.
+        )
+        fused = None
+        if revision.signal is None:
+            pipeline_status = "INCOMPLETE_REVISION_CONTEXT"
             audit_log.append(
-                "WARNING: Human review gate is PENDING. Downgrading to pure Quant Baseline Mode."
-            )
-            pipeline_status = "SUCCESS_DOWNGRADED_QUANT_ONLY"
-            # Strip qualitative adjustments in downgrade mode
-            bridge_res = self.bridge.evaluate(
-                quarter=quarter_str,
-                as_of_date=as_of_dt,
-                market_price=market_price,
-                quant_dcf_base=quant_dcf,
-                features={},  # Zero AI features
-                challenges=[],  # Zero haircuts
-                market_implied_growth_rate=implied_growth,
-                guidance_revenue_revision=0.0,
+                "Decision withheld: a complete, explicitly selected same-target forecast revision "
+                "is unavailable. Missing revisions are not zero-change signals."
             )
         else:
-            bridge_res = self.bridge.evaluate(
-                quarter=quarter_str,
-                as_of_date=as_of_dt,
-                market_price=market_price,
-                quant_dcf_base=quant_dcf,
-                features=features,
-                challenges=challenges,
-                market_implied_growth_rate=implied_growth,
-                guidance_revenue_revision=guidance_revision,
+            pipeline_status = "SUCCESS_DOWNGRADED_QUANT_ONLY"
+            fused = self.fusion.fuse_formal(bridge_res, formal.regime, revision.signal)
+            audit_log.append(
+                f"Quant-only decision: Action = {fused.action}, Equity = {fused.equity_weight * 100:.0f}%, "
+                f"Cash = {fused.cash_weight * 100:.0f}%"
             )
-
-        # Bind decision fusion to the complete corrected formal Regime envelope.
-        rev_input = ForecastRevisionInput(
-            revenue_revision_pct=guidance_revision,
-            eps_revision_pct=guidance_revision,
-            fcf_revision_pct=guidance_revision,
-            revision_direction="UPWARD" if guidance_revision > 0.05 else "NEUTRAL",
-        )
-        fused = self.fusion.fuse_formal(bridge_res, formal.regime, rev_input)
-
-        audit_log.append(
-            f"Decision Fusion: Action = {fused.action}, Recommended Equity = {fused.equity_weight * 100:.0f}%, "
-            f"Cash = {fused.cash_weight * 100:.0f}%"
-        )
 
         # -------------------------------------------------------------
         # Stage 9: Snapshot Commit or Quarantine
@@ -301,8 +237,11 @@ class QuarterlyCadencePipeline:
                 "regime_snapshot_id": formal.regime["snapshot_id"],
                 "checkpoint_timestamp": formal.regime["checkpoint_timestamp"],
             },
+            "regime_context": formal.regime,
+            "forecast_revision": revision.receipt,
+            "human_review": review_receipt,
             "valuation": bridge_res.to_dict(),
-            "decision": fused.to_dict(),
+            "decision": fused.to_dict() if fused is not None else None,
             "audit_log": audit_log,
         }
 
@@ -316,15 +255,11 @@ class QuarterlyCadencePipeline:
             market_implied_growth_rate=round(implied_growth, 4)
             if implied_growth is not None
             else None,
-            ai_fair_value_base=round(bridge_res.ai_fair_value_base, 2)
-            if pipeline_status == "SUCCESS_APPROVED"
-            else None,
-            ai_expectations_gap=round(bridge_res.ai_expectations_gap, 4)
-            if pipeline_status == "SUCCESS_APPROVED"
-            else None,
-            recommended_action=fused.action,
-            recommended_equity_weight=fused.equity_weight,
-            recommended_cash_weight=fused.cash_weight,
+            ai_fair_value_base=None,
+            ai_expectations_gap=None,
+            recommended_action=fused.action if fused is not None else None,
+            recommended_equity_weight=fused.equity_weight if fused is not None else None,
+            recommended_cash_weight=fused.cash_weight if fused is not None else None,
             human_review_status=human_review_status,
             stages_executed=stages_executed,
             audit_log=audit_log,

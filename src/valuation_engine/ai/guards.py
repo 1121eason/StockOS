@@ -107,6 +107,9 @@ def admit_feature(draft, evidence):
     ]
     contradict = sorted(set(draft.contradicting_evidence + auto))
     support = sorted(set(draft.supporting_evidence) - set(contradict))
+    # Moving mixed/overlapping evidence must not leave a signed assessment unsupported.
+    if expected and not any(evidence[k]["implication"] == expected for k in support):
+        return None, "direction_unsupported"
     all_ids = sorted(set(ids + contradict))
     items = [evidence[k] for k in all_ids]
     return {
