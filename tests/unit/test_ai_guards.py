@@ -53,6 +53,75 @@ def test_same_source_repetition_cannot_create_high_confidence():
     assert confidence([e, other], [other]) < confidence([e, other])
 
 
+@pytest.mark.parametrize(
+    "field", ["span_hash", "source_hash", "block_id", "statement_type", "certainty", "tier"]
+)
+@pytest.mark.parametrize("is_contradiction", [False, True])
+def test_confidence_rejects_missing_provenance_or_classification(field, is_contradiction):
+    item = evidence()
+    del item[field]
+
+    with pytest.raises(ValueError, match="Confidence requires"):
+        if is_contradiction:
+            confidence([evidence()], [item])
+        else:
+            confidence([item])
+
+
+@pytest.mark.parametrize("field", ["span_hash", "source_hash", "block_id"])
+@pytest.mark.parametrize("value", [None, "", "  ", 1])
+def test_confidence_rejects_invalid_provenance_before_deduplication(field, value):
+    with pytest.raises(ValueError, match="complete evidence provenance"):
+        confidence([evidence(), {**evidence(), field: value}])
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("statement_type", "unknown"),
+        ("statement_type", None),
+        ("certainty", "unknown"),
+        ("certainty", None),
+        ("tier", None),
+        ("tier", "1"),
+        ("tier", True),
+        ("tier", 0),
+        ("tier", 3),
+    ],
+)
+def test_confidence_rejects_invalid_classification(field, value):
+    with pytest.raises(ValueError, match="valid evidence classifications"):
+        confidence([{**evidence(), field: value}])
+
+
+@pytest.mark.parametrize(
+    "statement_type,weight",
+    [("reported_fact", 0.95), ("management_statement", 0.8), ("risk_disclosure", 0.65)],
+)
+@pytest.mark.parametrize(
+    "certainty,certainty_weight", [("explicit", 1), ("qualified", 0.8), ("ambiguous", 0.5)]
+)
+@pytest.mark.parametrize("tier,tier_weight", [(1, 1), (2, 0.9)])
+def test_confidence_preserves_admitted_evidence_weights(
+    statement_type, weight, certainty, certainty_weight, tier, tier_weight
+):
+    item = {**evidence(), "statement_type": statement_type, "certainty": certainty, "tier": tier}
+    assert confidence([item]) == round(weight * certainty_weight * tier_weight * 0.65, 8)
+
+
+def test_confidence_preserves_count_and_contradiction_factors():
+    first = evidence(key="first")
+    second = {**evidence(key="second"), "block_id": "second"}
+    copied = {**first, "source_hash": "copied", "block_id": "copied"}
+    assert confidence([]) == 0.0
+    assert confidence([first, first, copied]) == 0.52
+    assert confidence([first, second]) == 0.68
+    second["source_hash"] = "independent"
+    assert confidence([first, second]) == 0.76
+    assert confidence([first, second], [second, second]) == 0.38
+    assert confidence([first, second], [first, second]) == 0.38
+
+
 def test_opposite_direction_and_numeric_claim_rejected():
     draft = FeatureDraft(
         feature_name="demand_momentum",

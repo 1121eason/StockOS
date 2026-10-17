@@ -79,3 +79,13 @@ Coverage, schema validity, exact-span rejection, contradictions, semantic suppor
 ## Historical model limitation
 
 PIT filtering constrains the retrieved documents and structured context, not the model's training data. A modern model may already know later events. The prompt forbids use of that knowledge, but tests cannot prove it is absent from weights. Actual historical semantic review must look for unsupported later-event references; this is a remaining limitation, not a claim of a historically trained model.
+
+## Experimental S2 status (2026-10-16)
+
+The formal contract above remains `AIAnalystPolicyV1` / `PromptSetV1` /
+`FeatureSchemaV1`. The source-handoff claim of FSI promotion relied on hardcoded
+scores and is withdrawn. S2 and cohort scripts now produce isolated engineering
+candidates with explicit `UNSCORED` / `UNVERIFIED` outcomes. They do not replace
+this formal policy. See [S2 lineage contract](FSI_LINEAGE_CONTRACT.md) for the
+versioned candidate format, offline checks, remaining research gates, and
+unintegrated source dependencies.
