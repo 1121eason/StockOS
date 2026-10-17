@@ -13,3 +13,7 @@ th,.footer,.demo-notice{font-size:11px}
 @media(max-width:700px){.page-heading{align-items:flex-start}.page-heading .muted{font-size:11px}.company-name small{max-width:95px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.context-line{font-size:10px}.metrics .metric-label{font-size:11px}.metric-label{flex-wrap:wrap;gap:4px}.form-grid{grid-template-columns:1fr}.evidence-meta{font-size:10px}.footer{font-size:10px}.demo-notice{font-size:10px}.scenario dd{font-size:18px}.scenario dt{font-size:10px}.subtle-tag{font-size:9px}.definition{grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);font-size:11px}.definition dd{text-align:right}.form-actions .button{font-size:11px}.table-wrap{overscroll-behavior-x:contain}.evidence-title{align-items:flex-start}.panel-head .button{font-size:10px;padding:7px 10px}.callout{font-size:11px}}
 
 .table-wrap:focus-visible{outline:3px solid #d09237;outline-offset:-3px}
+
+/* Read-only imported research: long provenance must wrap on narrow screens. */
+.research-view .definition dd,.research-view article p {overflow-wrap:anywhere}
+.research-view #run {max-width:100%;margin:12px 8px 12px 0}

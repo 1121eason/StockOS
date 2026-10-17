@@ -1,18 +1,30 @@
 """
 StockOS Walk-Forward Backtester Engine (WalkForwardBacktester).
-Point-In-Time (PIT) simulation of systematic allocation strategies driven by
+Reconstruction diagnostic of systematic allocation strategies driven by
 the Valuation Bridge (ValuationBridgeV2), with audited overnight accounting
 and 4-way ablation controls against Naive DCF, Fixed 40/60 Allocation, Passive Buy-and-Hold,
 and Risk-Free Cash benchmarks.
 """
 
 from dataclasses import asdict, dataclass, field
-from datetime import datetime
-import json
+from datetime import date, datetime, time, timedelta
 import math
 from pathlib import Path
 import sqlite3
 from typing import Any, Dict, List, Optional
+
+from valuation_engine.time import ET, aware, calculate_next_tradable_timestamp, sessions
+
+
+TIMING_VERSION = "nasdaq_next_regular_open_v2"
+DIAGNOSTIC_LIMITATIONS = (
+    "Reconstruction diagnostic only; not historical out-of-sample or verified point-in-time evidence.",
+    "Explicit signal_available_at values are unverified source assertions, not validated publication timestamps.",
+    "Date-only as_of_date values use the next NASDAQ-local midnight as a conservative scheduling boundary, not an actual publication timestamp.",
+    "Original source, model, and price vintages remain unverified; temporal ordering alone cannot establish historical availability.",
+    "Results are not comparable to the prior date_on_or_after_v1 diagnostic timing version.",
+    "Daily-bar open execution assumes immediate fills and does not model publication latency or intraday execution.",
+)
 
 
 @dataclass
@@ -92,6 +104,116 @@ class BacktestReport:
     period_results: List[Dict[str, Any]]
     daily_equity_curve: List[Dict[str, Any]]
     ablation_attribution: Dict[str, Any] = field(default_factory=dict)
+    classification: str = field(default="reconstruction_diagnostic", init=False)
+    historical_oos: bool = field(default=False, init=False)
+    timing_version: str = field(default=TIMING_VERSION, init=False)
+    source_vintages_verified: bool = field(default=False, init=False)
+    model_vintages_verified: bool = field(default=False, init=False)
+    price_vintages_verified: bool = field(default=False, init=False)
+    limitations: list[str] = field(default_factory=lambda: list(DIAGNOSTIC_LIMITATIONS), init=False)
+    execution_schedule: list[dict[str, Any]] = field(default_factory=list)
+
+
+def _local_date(value: Any, field_name: str) -> date:
+    """Require a canonical date, never silently truncate a timestamp."""
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name} must be a YYYY-MM-DD date")
+    try:
+        parsed = date.fromisoformat(value)
+    except ValueError as exc:
+        raise ValueError(f"{field_name} must be a YYYY-MM-DD date") from exc
+    if parsed.isoformat() != value:
+        raise ValueError(f"{field_name} must be a YYYY-MM-DD date")
+    return parsed
+
+
+@dataclass(frozen=True)
+class _SignalTiming:
+    quarter: str
+    info: dict[str, Any]
+    as_of_date: date
+    scheduling_available_at: datetime
+    signal_available_at: str | None
+    availability_basis: str
+    execution_at: datetime
+
+    def audit_record(self) -> dict[str, Any]:
+        return {
+            "quarter": self.quarter,
+            "as_of_date": self.as_of_date.isoformat(),
+            "signal_available_at": self.signal_available_at,
+            "scheduling_available_at": self.scheduling_available_at.isoformat(),
+            "availability_basis": self.availability_basis,
+            "availability_verified": False,
+            "execution_at": self.execution_at.isoformat(),
+            "execution_date": self.execution_at.date().isoformat(),
+            "calendar": "NASDAQ",
+        }
+
+
+def _signal_timing(quarter: str, info: dict[str, Any]) -> _SignalTiming:
+    if not isinstance(info, dict):
+        raise ValueError(f"{quarter} must contain a signal object")
+    as_of = _local_date(info.get("as_of_date"), f"{quarter}.as_of_date")
+    asserted_available_at = None
+    if "signal_available_at" in info:
+        raw = info["signal_available_at"]
+        if not isinstance(raw, str) or "T" not in raw:
+            raise ValueError(f"{quarter}.signal_available_at must be a timezone-aware ISO timestamp")
+        try:
+            available_at = aware(datetime.fromisoformat(raw)).astimezone(ET)
+        except (ValueError, OverflowError) as exc:
+            raise ValueError(
+                f"{quarter}.signal_available_at must be a timezone-aware ISO timestamp"
+            ) from exc
+        if available_at.date() < as_of:
+            raise ValueError(f"{quarter}.signal_available_at precedes its NASDAQ-local as_of_date")
+        asserted_available_at = raw
+        basis = "explicit_unverified_source_assertion"
+    else:
+        # A date does not establish a publication time, including on early closes.
+        # Wait until that entire NASDAQ-local date has elapsed before finding an open.
+        try:
+            available_at = datetime.combine(as_of + timedelta(days=1), time.min, tzinfo=ET)
+        except OverflowError as exc:
+            raise ValueError(f"{quarter}.as_of_date has no representable following date") from exc
+        basis = "date_only_conservative_boundary"
+    execution_at = calculate_next_tradable_timestamp(available_at)
+    return _SignalTiming(
+        quarter=quarter,
+        info=info,
+        as_of_date=as_of,
+        scheduling_available_at=available_at,
+        signal_available_at=asserted_available_at,
+        availability_basis=basis,
+        execution_at=execution_at,
+    )
+
+
+def _validated_bar_indices(daily_bars: list[dict[str, Any]]) -> dict[str, int]:
+    """Reject ambiguous bars instead of sorting, deduplicating, or shifting fills."""
+    date_to_idx = {}
+    previous_date = None
+    for index, bar in enumerate(daily_bars):
+        bar_date = _local_date(bar.get("date"), f"bar[{index}].date")
+        if previous_date is not None and bar_date <= previous_date:
+            raise ValueError("Daily price bars must have unique, strictly increasing dates")
+        for price_name in ("open", "close"):
+            if not isinstance(bar.get(price_name), (int, float)) or isinstance(bar.get(price_name), bool):
+                raise ValueError(f"bar[{index}].{price_name} must be a finite positive price")
+            try:
+                price = float(bar[price_name])
+            except (KeyError, TypeError, ValueError, OverflowError) as exc:
+                raise ValueError(f"bar[{index}].{price_name} must be a finite positive price") from exc
+            if not math.isfinite(price) or price <= 0:
+                raise ValueError(f"bar[{index}].{price_name} must be a finite positive price")
+        date_to_idx[bar_date.isoformat()] = index
+        previous_date = bar_date
+    valid_sessions = set(sessions(daily_bars[0]["date"], daily_bars[-1]["date"]).index.strftime("%Y-%m-%d"))
+    for date_label in date_to_idx:
+        if date_label not in valid_sessions:
+            raise ValueError(f"Daily price bar {date_label} is not a NASDAQ regular session")
+    return date_to_idx
 
 
 class ValuationBridgeAlphaPolicy:
@@ -303,7 +425,7 @@ class BuyAndHoldPolicy:
 
 class WalkForwardBacktester:
     """
-    Point-In-Time Walk-Forward Execution Engine with Audited Accounting.
+    Reconstructed Walk-Forward Diagnostic with Audited Accounting.
     Executes quarterly rebalancing across historical price series, accurately
     handling overnight price jumps, open-to-close returns, and transaction frictions.
     """
@@ -358,40 +480,50 @@ class WalkForwardBacktester:
         policy: Any,
         strategy_name: str = "ValuationBridgeAlphaPolicy",
     ) -> BacktestReport:
-        """Runs the audited walk-forward simulation."""
+        """Run a reconstruction diagnostic, with conditional availability-safe execution."""
         quarters_dict = manifest_data.get("panel_quarters", {})
-        if not quarters_dict:
+        if not isinstance(quarters_dict, dict) or not quarters_dict:
             raise ValueError("Manifest contains no quarters data.")
 
-        # Sort quarters chronologically
-        q_keys = sorted(quarters_dict.keys(), key=lambda k: quarters_dict[k]["as_of_date"])
-        start_date = quarters_dict[q_keys[0]]["as_of_date"]
+        timings = [_signal_timing(name, info) for name, info in quarters_dict.items()]
+        timings.sort(key=lambda item: (item.as_of_date, item.scheduling_available_at))
+        for previous, current in zip(timings, timings[1:], strict=False):
+            if current.scheduling_available_at <= previous.scheduling_available_at:
+                raise ValueError("Signal availability order must increase with as_of_date")
+            if current.execution_at <= previous.execution_at:
+                raise ValueError(
+                    f"Signals {previous.quarter} and {current.quarter} collide or reverse execution order"
+                )
+        start_date = timings[0].as_of_date.isoformat()
 
         # Load daily price bars
         daily_bars = self.load_daily_prices(start_date=start_date)
         if not daily_bars:
             raise ValueError(f"No daily market price bars found starting from {start_date}")
 
-        # Map dates to bar indices
-        date_to_idx = {b["date"]: i for i, b in enumerate(daily_bars)}
+        date_to_idx = _validated_bar_indices(daily_bars)
 
-        # Determine rebalancing schedule:
-        # Each quarter has entry_date. Signal is known at as_of_date (after market close).
-        # Rebalancing execution happens on the first available trading bar on or after entry_date.
-        rebalance_schedule = []
-        for i, q_name in enumerate(q_keys):
-            q_info = quarters_dict[q_name]
-            as_of_dt = q_info["as_of_date"]
-            # Find first trading day >= as_of_dt
-            cand = [idx for idx, b in enumerate(daily_bars) if b["date"] >= as_of_dt]
-            if cand:
-                exec_idx = cand[0]
-                rebalance_schedule.append({
-                    "quarter": q_name,
-                    "info": q_info,
-                    "exec_bar_idx": exec_idx,
-                    "exec_date": daily_bars[exec_idx]["date"],
-                })
+        # Eligibility comes from the exchange calendar, not whichever bar happens to exist.
+        # A missing first eligible bar is an error, including signals beyond the data horizon.
+        rebalance_schedule: list[dict[str, Any]] = []
+        for timing in timings:
+            execution_date = timing.execution_at.date().isoformat()
+            if execution_date not in date_to_idx:
+                raise ValueError(
+                    f"Missing first eligible NASDAQ session bar {execution_date} for {timing.quarter}"
+                )
+            rebalance_schedule.append({
+                "quarter": timing.quarter,
+                "info": timing.info,
+                "exec_bar_idx": date_to_idx[execution_date],
+            })
+
+        # All strategies and benchmarks begin at the first eligible open. Earlier bars
+        # neither earn a strategy return nor create a fictitious pre-signal quarter.
+        first_exec_idx = rebalance_schedule[0]["exec_bar_idx"]
+        daily_bars = daily_bars[first_exec_idx:]
+        for item in rebalance_schedule:
+            item["exec_bar_idx"] -= first_exec_idx
 
         # Simulation states
         nav = self.config.initial_capital
@@ -627,4 +759,5 @@ class WalkForwardBacktester:
             beta=round(beta, 4),
             period_results=[asdict(p) for p in period_results],
             daily_equity_curve=[asdict(d) for d in daily_curve],
+            execution_schedule=[timing.audit_record() for timing in timings],
         )

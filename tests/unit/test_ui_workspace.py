@@ -100,3 +100,58 @@ def test_http_calculation_and_cross_origin_guard(server):
     assert request(server, "POST", "/api/sandbox", "{}", headers)[0] == 422
     assert request(server, "GET", "/api/workspace?company=unknown")[0] == 404
     assert request(server, "POST", "/api/sandbox", "[]", headers)[0] == 422
+
+
+def test_research_routes_are_read_only_and_empty_without_explicit_store(server):
+    status, _, body = request(server, "GET", "/api/research/runs")
+    assert status == 200
+    assert json.loads(body) == {"configured": False, "runs": []}
+    assert request(server, "GET", "/api/research/run?id=anything")[0] == 404
+    assert request(server, "POST", "/api/research/runs", "{}")[0] == 404
+    assert request(server, "GET", "/research")[0] == 200
+    assert request(server, "GET", "/research.js")[0] == 200
+
+
+def test_research_http_loads_canonical_saved_result_without_demo_substitution(tmp_path):
+    from valuation_engine.research.workspace import import_bundle
+
+    def evidence(value):
+        return {"value": value, "source_ids": ["filing"],
+                "available_at": "2020-01-01T00:00:00Z"}
+    bundle = {
+        "schema_version": 1, "ticker": "TEST", "name": "Synthetic contract test",
+        "as_of": "2020-01-01T00:00:00Z", "data_kind": "synthetic",
+        "sources": [{"id": "filing", "url": "https://example.com/synthetic",
+                     "published_at": "2019-12-31T00:00:00Z",
+                     "retrieved_at": "2026-01-01T00:00:00Z", "sha256": "a" * 64}],
+        "inputs": {"cash": evidence("0"), "debt": evidence("1000"),
+                   "shares": evidence("100"), "wacc": evidence("0.1"),
+                   "terminal_growth": evidence("0"),
+                   "forecast_cashflows": [evidence("100") for _ in range(5)]},
+        "assumptions": {"classification": "research_reconstructed_not_historical_oos",
+                        "rationale": "Synthetic test values; no historical model vintage."},
+    }
+    store = tmp_path / "private.sqlite"
+    stored = import_bundle(store, bundle)
+    instance = ui.ResearchHTTPServer(("127.0.0.1", 0), ui.Handler)
+    instance.research_store = store
+    thread = threading.Thread(target=instance.serve_forever, daemon=True)
+    thread.start()
+    port = instance.server_address[1]
+    try:
+        status, _, body = request(port, "GET", "/api/research/runs")
+        assert status == 200
+        assert json.loads(body)["runs"][0]["run_id"] == stored["run_id"]
+        status, _, body = request(port, "GET", "/api/research/run?id=" + stored["run_id"])
+        assert status == 200
+        loaded = json.loads(body)
+        assert loaded == stored
+        assert loaded["formal_decision"] == "withheld"
+        assert Decimal(loaded["valuation"]["per_share"]) == 0
+        assert request(port, "GET", "/api/research/run?id=../../private.sqlite")[0] == 422
+        assert request(port, "GET", "/private.sqlite")[0] == 404
+        assert json.loads(request(port, "GET", "/api/workspace")[2])["mode"] == "demo"
+    finally:
+        instance.shutdown()
+        instance.server_close()
+        thread.join(timeout=2)

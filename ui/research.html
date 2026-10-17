@@ -1,0 +1,11 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>StockOS · 匯入研究</title><link rel="stylesheet" href="/styles.css"><script type="module" src="/research.js"></script></head>
+<body class="research-view">
+<aside class="sidebar"><a class="brand" href="/">StockOS</a><nav><a href="/">合成示範工作區</a><a href="/research" aria-current="page">匯入研究結果</a></nav><div class="sidebar-note">唯讀研究檢視<p>不產生正式決策或交易</p></div></aside>
+<div class="workspace"><header class="topbar"><strong>匯入研究結果</strong><span class="demo-pill">研究重建 · 非歷史樣本外驗證</span></header>
+<main id="main"><h1>已保存的研究</h1><p class="callout">來源與雜湊是匯入者提供的聲明，尚未由系統核對原始文件。過去的 as-of 不表示模型當時已存在。正式 PIT、修訂、核准與 AI 守門條件均未解除。</p>
+<label for="run">選擇不可變研究結果</label><select id="run"><option value="">載入中…</option></select><button id="refresh" class="button secondary">重新載入</button>
+<p id="message" role="status" aria-live="polite"></p><section id="result" aria-live="polite"></section>
+<p class="sandbox-note">使用離線匯入指令與明確的 --research-store 路徑啟用。瀏覽器不能匯入、修改或刪除結果。無資料時不會替代為合成估值。</p>
+</main></div></body></html>

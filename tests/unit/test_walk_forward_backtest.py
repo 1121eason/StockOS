@@ -138,8 +138,8 @@ def test_backtester_nav_accounting_synthetic(monkeypatch):
     )
 
     synthetic_bars = [
-        {"date": "2024-01-01", "open": 100.0, "high": 105.0, "low": 98.0, "close": 102.0, "adj_close": 102.0, "volume": 1000},
-        {"date": "2024-01-02", "open": 102.0, "high": 106.0, "low": 101.0, "close": 105.0, "adj_close": 105.0, "volume": 1200},
+        {"date": "2024-01-02", "open": 100.0, "high": 105.0, "low": 98.0, "close": 102.0, "adj_close": 102.0, "volume": 1000},
+        {"date": "2024-01-03", "open": 102.0, "high": 106.0, "low": 101.0, "close": 105.0, "adj_close": 105.0, "volume": 1200},
         {"date": "2024-02-01", "open": 110.0, "high": 115.0, "low": 108.0, "close": 112.0, "adj_close": 112.0, "volume": 1500},
         {"date": "2024-02-02", "open": 112.0, "high": 118.0, "low": 110.0, "close": 115.0, "adj_close": 115.0, "volume": 1600},
     ]
@@ -150,7 +150,8 @@ def test_backtester_nav_accounting_synthetic(monkeypatch):
         "panel_quarters": {
             "Q1": {
                 "quarter": "Q1",
-                "as_of_date": "2024-01-01",
+                "as_of_date": "2024-01-02",
+                "signal_available_at": "2024-01-02T09:00:00-05:00",
                 "market_price": 100.0,
                 "quant_dcf_base": 120.0,
                 "expectations_gap": 0.20,
@@ -160,6 +161,7 @@ def test_backtester_nav_accounting_synthetic(monkeypatch):
             "Q2": {
                 "quarter": "Q2",
                 "as_of_date": "2024-02-01",
+                "signal_available_at": "2024-02-01T09:00:00-05:00",
                 "market_price": 110.0,
                 "quant_dcf_base": 115.0,
                 "expectations_gap": 0.05,

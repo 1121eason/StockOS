@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Local-only StockOS UI. No database, credentials, provider, or write integration."""
+"""Loopback UI with optional read-only isolated research results; no providers."""
 
 from __future__ import annotations
 
@@ -22,6 +22,8 @@ from valuation_engine.research.numbers import MarketEquityShares, canonical  # n
 
 ASSETS = {
     "/": "index.html",
+    "/research": "research.html",
+    "/research.js": "research.js",
     "/app.js": "app.js",
     "/domain.mjs": "domain.mjs",
     "/styles.css": "styles.css",
@@ -104,7 +106,11 @@ def workspace(company_id: str) -> dict[str, Any]:
         else {"status": "unavailable", "reason": "尚無研究資料；現金流、現金、負債與股數皆缺值"}
     )
     return {**data, "company": company, "valuation": result,
-            "served_at": datetime.now(UTC).isoformat(), "backend_baseline": "cbb78db"}
+            "served_at": datetime.now(UTC).isoformat(), "backend_baseline": "0c9d858da7eb92e2387cb918bbbe5968ad2a1a54"}
+
+
+class ResearchHTTPServer(ThreadingHTTPServer):
+    research_store: Path | None = None
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -153,9 +159,23 @@ class Handler(BaseHTTPRequestHandler):
             if path.suffix == ".mjs":
                 mime = "text/javascript"
             self.send(200, path.read_bytes(), mime + "; charset=utf-8")
+        elif url.path in ("/api/research/runs", "/api/research/run"):
+            from valuation_engine.research.workspace import list_runs, load_run
+
+            store = getattr(self.server, "research_store", None)
+            try:
+                if url.path == "/api/research/runs":
+                    self.json(200, {"configured": store is not None,
+                                    "runs": list_runs(store) if store else []})
+                elif store is None:
+                    self.json(404, {"error": "未設定獨立研究儲存區"})
+                else:
+                    self.json(200, load_run(store, parse_qs(url.query).get("id", [""])[0]))
+            except (ValueError, OSError):
+                self.json(422, {"error": "研究儲存區無法讀取或結果不存在"})
         elif url.path == "/api/health":
             self.json(200, {"status": "ok", "mode": "demo", "database_connected": False,
-                            "provider_calls": False, "backend_baseline": "cbb78db"})
+                            "provider_calls": False, "backend_baseline": "0c9d858da7eb92e2387cb918bbbe5968ad2a1a54"})
         elif url.path == "/api/workspace":
             try:
                 self.json(200, workspace(parse_qs(url.query).get("company", ["aurora"])[0]))
@@ -194,16 +214,18 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="StockOS 本機 UI（合成示範資料）")
+    parser = argparse.ArgumentParser(description="StockOS 本機 UI（合成示範與獨立唯讀研究）")
     parser.add_argument("--port", type=int, default=8501)
+    parser.add_argument("--research-store", type=Path, help="Explicit isolated research SQLite file; read-only UI")
     args = parser.parse_args()
     if not 1024 <= args.port <= 65535:
         parser.error("port 須介於 1024 與 65535")
     try:
-        server = ThreadingHTTPServer(("127.0.0.1", args.port), Handler)
+        server = ResearchHTTPServer(("127.0.0.1", args.port), Handler)
     except OSError as exc:
         parser.exit(1, f"無法啟動：{exc}\n請改用 --port 8502，或在原終端機按 Ctrl+C。\n")
-    print(f"StockOS 示範工作區：http://127.0.0.1:{args.port}\nCtrl+C 停止；不讀取資料庫、不呼叫模型。", flush=True)
+    server.research_store = args.research_store
+    print(f"StockOS 示範工作區：http://127.0.0.1:{args.port}\nCtrl+C 停止；不讀取正式資料庫、不呼叫模型。選配研究儲存區僅唯讀。", flush=True)
     try:
         server.serve_forever()
     except KeyboardInterrupt:

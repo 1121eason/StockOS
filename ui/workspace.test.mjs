@@ -85,7 +85,7 @@ test('company search, negative DCF and empty data remain distinct',async()=>{
     assert.match(a.doc.querySelector('.negative').textContent,/原值保留/);assert.match(a.doc.querySelector('.metric-value').textContent,/\$-/);
     a.click('#company-button');a.fill('#company-search','NEW');a.click('[data-company="empty"]');await until(()=>a.doc.querySelector('#empty-company'));
     assert.match(a.doc.querySelector('#main').textContent,/還沒有可用/);assert.doesNotMatch(a.doc.querySelector('#main').textContent,/\$0\.00/);
-    await a.route('status');assert.match(a.doc.querySelector('#main').textContent,/未連接/);
+    await a.route('status');await until(()=>a.doc.querySelector('#health-status')?.textContent.includes('未連接'));assert.match(a.doc.querySelector('#main').textContent,/未連接/);
   } finally {a.dom.window.close();}
 });
 

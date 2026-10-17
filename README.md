@@ -3,6 +3,8 @@
 Executable, deterministic quarterly financial research engine. **Quant calculates. AI interprets.**
 NVDA only. No trading signals, fitted thresholds, brokerage connection or claimed returns.
 
+**Source-only checkout:** Runtime NVDA databases and original research artifacts are not included. Historical milestone evidence below describes separate local runs, not data available in a fresh clone. The [isolated offline research workflow](docs/RESEARCH_WORKSPACE.md) imports explicitly supplied bundles into a separate store; [UI instructions](UI_START_HERE.md) explain its read-only view. Missing inputs stay unavailable. The [backtest timing audit](docs/BACKTEST_TEMPORAL_AUDIT.md) documents reconstruction-only classification and execution limitations.
+
 **M1.1 Final Closure: PM accepted.** Read [the preserved closure report](docs/MILESTONE_1_1_FINAL_CLOSURE_REPORT.md). Two real SEC runs created 112 filings, 1,938 facts and 65 documents on the first run, and zero new records on the second. All 26 valuation dates have eligible shares and market cap; all three PM gates pass. PM accepts minute-level availability and explicitly labeled research-reconstructed prices. Independent raw-price vendors and Wall Street consensus are not required. M2 implementation and evidence are described below.
 
 ## Milestone 4 AI Analyst

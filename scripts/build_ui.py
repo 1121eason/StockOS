@@ -8,7 +8,7 @@ from html.parser import HTMLParser
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-ASSETS = ("index.html", "styles.css", "app.js", "domain.mjs", "favicon.svg")
+ASSETS = ("index.html", "styles.css", "app.js", "domain.mjs", "favicon.svg", "research.html", "research.js")
 
 
 class AssetParser(HTMLParser):
@@ -28,7 +28,7 @@ def main() -> None:
     for name in ASSETS:
         source = ROOT / "ui" / name
         content = source.read_text(encoding="utf-8")
-        if name == "index.html":
+        if name.endswith(".html"):
             AssetParser().feed(content)
         manifest[name] = hashlib.sha256(source.read_bytes()).hexdigest()
         shutil.copy2(source, output / name)

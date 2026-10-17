@@ -84,7 +84,7 @@ def test_double_counting_guard():
     assert score_with_guidance < score_no_guidance
 
 
-def test_overnight_accounting_and_turnover_continuity():
+def test_overnight_accounting_and_turnover_continuity(monkeypatch):
     """Verify that overnight price moves on existing holdings are correctly realized at rebalance Open."""
     backtester = WalkForwardBacktester(config=BacktestConfig(initial_capital=100_000.0, transaction_cost_bps=10.0))
 
@@ -93,7 +93,8 @@ def test_overnight_accounting_and_turnover_continuity():
         "panel_quarters": {
             "Q1": {
                 "quarter": "Q1",
-                "as_of_date": "2023-01-01",
+                "as_of_date": "2023-01-03",
+                "signal_available_at": "2023-01-03T09:00:00-05:00",
                 "market_price": 100.0,
                 "quant_dcf_base": 120.0,
                 "expectations_gap": 0.20,
@@ -101,7 +102,8 @@ def test_overnight_accounting_and_turnover_continuity():
             },
             "Q2": {
                 "quarter": "Q2",
-                "as_of_date": "2023-01-03",
+                "as_of_date": "2023-01-05",
+                "signal_available_at": "2023-01-05T09:00:00-05:00",
                 "market_price": 120.0,
                 "quant_dcf_base": 80.0,
                 "expectations_gap": -0.33,
@@ -110,14 +112,14 @@ def test_overnight_accounting_and_turnover_continuity():
         }
     }
 
-    # Synthetic price bars with overnight gap between 2023-01-02 close ($110) and 2023-01-03 open ($115)
+    # Synthetic price bars with overnight gap between 2023-01-04 close ($110) and 2023-01-05 open ($115)
     mock_bars = [
-        {"date": "2023-01-01", "open": 100.0, "high": 105.0, "low": 99.0, "close": 105.0, "adjusted_close": 105.0, "volume": 1000},
-        {"date": "2023-01-02", "open": 105.0, "high": 110.0, "low": 104.0, "close": 110.0, "adjusted_close": 110.0, "volume": 1000},
-        {"date": "2023-01-03", "open": 115.0, "high": 116.0, "low": 112.0, "close": 112.0, "adjusted_close": 112.0, "volume": 1000},
-        {"date": "2023-01-04", "open": 112.0, "high": 114.0, "low": 111.0, "close": 114.0, "adjusted_close": 114.0, "volume": 1000},
+        {"date": "2023-01-03", "open": 100.0, "high": 105.0, "low": 99.0, "close": 105.0, "adjusted_close": 105.0, "volume": 1000},
+        {"date": "2023-01-04", "open": 105.0, "high": 110.0, "low": 104.0, "close": 110.0, "adjusted_close": 110.0, "volume": 1000},
+        {"date": "2023-01-05", "open": 115.0, "high": 116.0, "low": 112.0, "close": 112.0, "adjusted_close": 112.0, "volume": 1000},
+        {"date": "2023-01-06", "open": 112.0, "high": 114.0, "low": 111.0, "close": 114.0, "adjusted_close": 114.0, "volume": 1000},
     ]
-    backtester.load_daily_prices = lambda start_date, end_date="2026-09-11": mock_bars
+    monkeypatch.setattr(backtester, "load_daily_prices", lambda **kwargs: mock_bars)
 
     report = backtester.run(manifest_data, policy=ValuationBridgeAlphaPolicy())
     assert len(report.period_results) == 2
@@ -126,6 +128,14 @@ def test_overnight_accounting_and_turnover_continuity():
     day2_nav = report.daily_equity_curve[1]["strategy_nav"]
     day3_nav = report.daily_equity_curve[2]["strategy_nav"]
     assert day3_nav > day2_nav  # Benefited from overnight gap
+    # Preserve both entry cost and the rebalance cost on the gap-adjusted NAV.
+    assert day2_nav == pytest.approx(109_890.0)
+    daily_rf = 1.04 ** (1.0 / 252.0) - 1.0
+    expected_cash_after_exit = 999.0 * 115.0 * (1.0 - 0.001)
+    assert day3_nav == pytest.approx(expected_cash_after_exit * (1.0 + daily_rf), abs=0.01)
+    assert report.final_nav == pytest.approx(expected_cash_after_exit * (1.0 + daily_rf) ** 2, abs=0.01)
+    assert report.period_results[0]["transaction_fee_paid"] == 100.0
+    assert report.period_results[1]["transaction_fee_paid"] == 114.89
 
 
 def test_fixed_allocation_ablation_control():
