@@ -22,7 +22,22 @@ from valuation_engine.research.dcf import DCFModel
 from valuation_engine.research.numbers import MarketEquityShares
 
 CLASSIFICATION = "research_reconstructed_not_historical_oos"
+# This is the SQLite storage version, not the newest supported JSON bundle version.
 SCHEMA_VERSION = 1
+SUPPORTED_BUNDLE_VERSIONS = (1, 2)
+POLICY_SOURCE_TYPE = "fixed_research_policy_not_return_fitted"
+POLICY_CLASSIFICATION = "research_reconstructed_internal"
+MAX_POLICY_CONTENT_CHARS = 65_536
+INTERNAL_POLICY_LIMITATIONS = (
+    "Source records and both policy hashes are unverified importer assertions; "
+    "they do not authenticate an exporter or an excluded source database.",
+    "The economic checkpoint is not evidence of historical availability or an "
+    "original forecast vintage.",
+    "Internal policy creation and effective timestamps are not publication timestamps; "
+    "current observation is the conservative source-availability boundary.",
+    "Source, model and price vintages are unverified; this current reconstruction is "
+    "not a historical out-of-sample result and formal decisions remain withheld.",
+)
 MAX_DECIMAL_EXPONENT = 100
 MAX_SERIALIZED_NUMBER_CHARS = 4096
 APPLICATION_ID = 0x53525731
@@ -158,7 +173,122 @@ def parse_bundle_json(value: str) -> dict:
     return result
 
 
+def _positive_record_id(value: Any, label: str) -> int:
+    if type(value) is not int or value <= 0:
+        raise ValueError(f"{label}: positive integer record ID required")
+    return value
+
+
+def _internal_policy(
+    source: dict[str, Any], label: str, as_of: datetime
+) -> tuple[datetime, dict[str, Decimal]]:
+    """Validate a bounded, asserted policy artifact without claiming publication."""
+    _object(
+        source,
+        {
+            "kind",
+            "id",
+            "source_type",
+            "policy_version",
+            "assumption_set_id",
+            "content_sha256",
+            "assumption_content_hash",
+            "content",
+            "created_at",
+            "effective_from",
+            "observed_at",
+            "published_at",
+            "historical_available_at",
+            "source_reference",
+            "parameter_records",
+        },
+        label,
+    )
+    if source["source_type"] != POLICY_SOURCE_TYPE:
+        raise ValueError(f"{label}.source_type must be {POLICY_SOURCE_TYPE}")
+    version = _text(source["policy_version"], f"{label}.policy_version", 200)
+    _positive_record_id(source["assumption_set_id"], f"{label}.assumption_set_id")
+    _text(source["source_reference"], f"{label}.source_reference", 5000)
+    if source["published_at"] is not None or source["historical_available_at"] is not None:
+        raise ValueError(f"{label}: internal publication and historical availability must be null")
+
+    created = _timestamp(source["created_at"], f"{label}.created_at")
+    effective = _timestamp(source["effective_from"], f"{label}.effective_from")
+    observed = _timestamp(source["observed_at"], f"{label}.observed_at")
+    if created > observed or effective > observed:
+        raise ValueError(f"{label}: creation and effective time cannot exceed observation")
+    if observed > as_of:
+        raise ValueError(f"{label}: observation is after as_of (temporal leakage)")
+
+    content = source["content"]
+    required_content = {
+        "version",
+        "classification",
+        "effective_from",
+        "wacc_base",
+        "terminal_growth_base",
+    }
+    if not isinstance(content, dict) or not required_content <= set(content):
+        raise ValueError(
+            f"{label}.content: policy JSON object with required identity and rates required"
+        )
+    canonical = _json(content)
+    if len(canonical) > MAX_POLICY_CONTENT_CHARS:
+        raise ValueError(
+            f"{label}.content: at most {MAX_POLICY_CONTENT_CHARS} canonical characters allowed"
+        )
+    # Preserve both identities: repository assumption sets use JSON's default separators.
+    original = json.dumps(content, sort_keys=True, ensure_ascii=True, allow_nan=False)
+    for key, encoded in (("content_sha256", canonical), ("assumption_content_hash", original)):
+        supplied = source[key]
+        if not isinstance(supplied, str) or not _HASH.fullmatch(supplied):
+            raise ValueError(f"{label}.{key}: lowercase 64-character digest required")
+        if supplied != _digest(encoded):
+            raise ValueError(f"{label}.{key}: policy content digest mismatch")
+    if content["version"] != version or content["classification"] != POLICY_CLASSIFICATION:
+        raise ValueError(f"{label}.content: policy version or classification mismatch")
+    if _timestamp(content["effective_from"], f"{label}.content.effective_from") != effective:
+        raise ValueError(f"{label}.content.effective_from: explicit effective time mismatch")
+    rates: dict[str, Decimal] = {}
+    for parameter in ("wacc", "terminal_growth"):
+        value = _decimal(content[f"{parameter}_base"], f"{label}.content.{parameter}_base")
+        if value is None:
+            raise ValueError(f"{label}.content: policy rates must be non-null")
+        rates[parameter] = value
+
+    records = source["parameter_records"]
+    if not isinstance(records, list) or len(records) != 2:
+        raise ValueError(
+            f"{label}.parameter_records: exactly wacc and terminal_growth records required"
+        )
+    record_ids: set[int] = set()
+    parameters: set[str] = set()
+    for index, record in enumerate(records):
+        record_label = f"{label}.parameter_records[{index}]"
+        _object(record, {"record_id", "parameter", "value", "created_at"}, record_label)
+        rid = _positive_record_id(record["record_id"], f"{record_label}.record_id")
+        parameter = record["parameter"]
+        if rid in record_ids:
+            raise ValueError(f"{record_label}.record_id: unique parameter record IDs required")
+        if not isinstance(parameter, str) or parameter not in rates or parameter in parameters:
+            raise ValueError(f"{record_label}.parameter: unique wacc or terminal_growth required")
+        value = _decimal(record["value"], f"{record_label}.value")
+        if value is None or value != rates[parameter]:
+            raise ValueError(
+                f"{record_label}.value: non-null value matching policy content required"
+            )
+        record_created = _timestamp(record["created_at"], f"{record_label}.created_at")
+        if not created <= record_created <= observed:
+            raise ValueError(
+                f"{record_label}: creation must be between artifact creation and observation"
+            )
+        record_ids.add(rid)
+        parameters.add(parameter)
+    return observed, rates
+
+
 def _validate(bundle: Any, now: datetime) -> tuple[dict, dict]:
+    schema_version = bundle.get("schema_version") if isinstance(bundle, dict) else None
     _object(
         bundle,
         {
@@ -170,17 +300,22 @@ def _validate(bundle: Any, now: datetime) -> tuple[dict, dict]:
             "sources",
             "inputs",
             "assumptions",
-        },
+        }
+        | ({"economic_as_of"} if type(schema_version) is int and schema_version == 2 else set()),
         "bundle",
     )
-    if type(bundle["schema_version"]) is not int or bundle["schema_version"] != SCHEMA_VERSION:
-        raise ValueError("schema_version must be integer 1")
+    if type(schema_version) is not int or schema_version not in SUPPORTED_BUNDLE_VERSIONS:
+        raise ValueError("schema_version must be integer 1 or 2")
     if not isinstance(bundle["ticker"], str) or not _TICKER.fullmatch(bundle["ticker"]):
         raise ValueError("ticker: expected uppercase market identifier, at most 16 characters")
     _text(bundle["name"], "name", 200)
     as_of = _timestamp(bundle["as_of"], "as_of")
     if as_of > now:
         raise ValueError("as_of must not be in the future")
+    if schema_version == 2:
+        economic_as_of = _timestamp(bundle["economic_as_of"], "economic_as_of")
+        if economic_as_of > as_of:
+            raise ValueError("economic_as_of cannot exceed reconstruction as_of")
     if bundle["data_kind"] not in ("real", "synthetic"):
         raise ValueError("data_kind must be real or synthetic")
     assumptions = _object(bundle["assumptions"], {"classification", "rationale"}, "assumptions")
@@ -190,13 +325,35 @@ def _validate(bundle: Any, now: datetime) -> tuple[dict, dict]:
     sources = bundle["sources"]
     if not isinstance(sources, list) or len(sources) > 1000:
         raise ValueError("sources must be a list with at most 1000 entries")
-    source_times = {}
+    source_times: dict[str, datetime] = {}
+    internal_policies: dict[str, dict[str, Decimal]] = {}
     for index, source in enumerate(sources):
         label = f"sources[{index}]"
-        _object(source, {"id", "url", "published_at", "retrieved_at", "sha256"}, label)
+        internal = (
+            schema_version == 2
+            and isinstance(source, dict)
+            and source.get("kind") == "internal_policy_artifact"
+        )
+        if internal:
+            available, policy_rates = _internal_policy(source, label, as_of)
+        else:
+            _object(
+                source,
+                {"id", "url", "published_at", "retrieved_at", "sha256"}
+                | ({"kind"} if schema_version == 2 else set()),
+                label,
+            )
+            if schema_version == 2 and source["kind"] != "external_document":
+                raise ValueError(
+                    f"{label}.kind: external_document or internal_policy_artifact required"
+                )
         sid = source["id"]
         if not isinstance(sid, str) or not _ID.fullmatch(sid) or sid in source_times:
             raise ValueError(f"{label}.id: unique source identifier required")
+        if internal:
+            source_times[sid] = available
+            internal_policies[sid] = policy_rates
+            continue
         url = source["url"]
         if (
             not isinstance(url, str)
@@ -227,8 +384,9 @@ def _validate(bundle: Any, now: datetime) -> tuple[dict, dict]:
         source_times[sid] = published
 
     raw_inputs = _object(bundle["inputs"], {*SCALAR_INPUTS, "forecast_cashflows"}, "inputs")
+    used_internal: set[str] = set()
 
-    def evidence(raw: Any, label: str) -> Decimal | None:
+    def evidence(raw: Any, label: str, parameter: str | None = None) -> Decimal | None:
         _object(raw, {"value", "source_ids", "available_at"}, label)
         result = _decimal(raw["value"], f"{label}.value")
         ids = raw["source_ids"]
@@ -239,6 +397,18 @@ def _validate(bundle: Any, now: datetime) -> tuple[dict, dict]:
             or any(sid not in source_times for sid in ids)
         ):
             raise ValueError(f"{label}.source_ids: unique known source IDs required")
+        policy_ids = [sid for sid in ids if sid in internal_policies]
+        if policy_ids:
+            if parameter not in ("wacc", "terminal_growth"):
+                raise ValueError(f"{label}: internal policy artifacts can support only rates")
+            if len(ids) != 1 or result is None:
+                raise ValueError(
+                    f"{label}: an internal rate must be non-null and cite exactly one artifact"
+                )
+            sid = policy_ids[0]
+            if result != internal_policies[sid][parameter]:
+                raise ValueError(f"{label}: internal rate must match its policy parameter record")
+            used_internal.add(sid)
         available = (
             None
             if raw["available_at"] is None
@@ -250,11 +420,14 @@ def _validate(bundle: Any, now: datetime) -> tuple[dict, dict]:
             if available > as_of:
                 raise ValueError(f"{label}: availability is after as_of (temporal leakage)")
             if any(source_times[sid] > available for sid in ids):
-                raise ValueError(f"{label}: availability cannot precede referenced publication")
+                boundary = (
+                    "publication or policy observation" if schema_version == 2 else "publication"
+                )
+                raise ValueError(f"{label}: availability cannot precede referenced {boundary}")
         return result
 
     values: dict[str, Any] = {
-        key: evidence(raw_inputs[key], f"inputs.{key}") for key in SCALAR_INPUTS
+        key: evidence(raw_inputs[key], f"inputs.{key}", key) for key in SCALAR_INPUTS
     }
     cashflows = raw_inputs["forecast_cashflows"]
     if not isinstance(cashflows, list) or len(cashflows) != 5:
@@ -263,6 +436,8 @@ def _validate(bundle: Any, now: datetime) -> tuple[dict, dict]:
         evidence(value, f"inputs.forecast_cashflows[{index}]")
         for index, value in enumerate(cashflows)
     ]
+    if used_internal != set(internal_policies):
+        raise ValueError("Every internal policy artifact must support a cited rate input")
     # Preserve supplied values and timestamps, while taking ownership of all mutable data.
     return parse_bundle_json(_json(bundle)), values
 
@@ -344,7 +519,7 @@ def _valuation(values: dict) -> dict:
 
 def _result(bundle: dict, values: dict, generated_at: str) -> dict:
     input_hash = _digest(_json(bundle))
-    return {
+    result = {
         "run_id": f"rw1_{input_hash}",
         "input_hash": input_hash,
         "generated_at": generated_at,
@@ -352,12 +527,22 @@ def _result(bundle: dict, values: dict, generated_at: str) -> dict:
         "classification": CLASSIFICATION,
         "formal_decision": "withheld",
         "source_verification": "asserted_unverified",
-        "schema_version": SCHEMA_VERSION,
+        "schema_version": bundle["schema_version"],
         "units": dict(UNITS),
         **{key: bundle[key] for key in ("ticker", "name", "as_of", "data_kind")},
         "bundle": bundle,
         "valuation": _valuation(values),
     }
+    if bundle["schema_version"] == 2:
+        result.update(
+            economic_as_of=bundle["economic_as_of"],
+            historical_oos=False,
+            source_vintages_verified=False,
+            model_vintages_verified=False,
+            price_vintages_verified=False,
+            provenance_limitations=list(INTERNAL_POLICY_LIMITATIONS),
+        )
+    return result
 
 
 def _path(path: str | Path) -> Path:

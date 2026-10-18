@@ -205,3 +205,5 @@ write access to the database can still drop triggers or replace the entire file.
 normal filesystem permissions and backups appropriate to the data. The database is never
 converted to the application's formal schema, and research runs never become formal
 trading decisions through this workflow.
+
+Schema 2 supports narrowly typed internal policy artifacts for current reconstruction; see [the internal-policy contract and storage compatibility notes](INTERNAL_POLICY_RECONSTRUCTION.md). Schema 1 remains unchanged.

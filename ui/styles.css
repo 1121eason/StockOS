@@ -17,3 +17,19 @@ th,.footer,.demo-notice{font-size:11px}
 /* Read-only imported research: long provenance must wrap on narrow screens. */
 .research-view .definition dd,.research-view article p {overflow-wrap:anywhere}
 .research-view #run {max-width:100%;margin:12px 8px 12px 0}
+
+/* Typed provenance remains readable without turning asserted sources into links. */
+.research-view .research-source{padding:20px 0;border-bottom:1px solid var(--line)}
+.research-view .research-source:first-child{padding-top:0}
+.research-view .research-source:last-child{border-bottom:0;padding-bottom:0}
+.research-view .source-kind{margin:5px 0 14px;font-size:12px;color:var(--muted)}
+.research-view .source-note{margin:14px 0;font-size:12px;color:var(--muted)}
+.research-view .definition{grid-template-columns:minmax(180px,1fr) minmax(0,1.5fr)}
+.research-view .definition dt{overflow-wrap:anywhere}
+.research-view .panel-body>.callout,.research-view .research-source>.callout{margin:14px 0}
+.research-view .policy-content{margin-top:16px;font-size:12px}
+.research-view .policy-content summary{cursor:pointer;color:var(--green)}
+.research-view .policy-content pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:440px;overflow:auto;background:#f8faf7;border:1px solid var(--line);border-radius:6px;padding:14px;font-size:12px;line-height:1.6}
+.research-view .provenance-limitations{padding-left:22px;font-size:12px;overflow-wrap:anywhere}
+.research-view .provenance-limitations li+li{margin-top:6px}
+@media(max-width:700px){.research-view .definition{grid-template-columns:1fr;gap:4px}.research-view .definition dd{text-align:left;margin-bottom:10px}.research-view nav{grid-template-columns:repeat(2,1fr)}.research-view .topbar{height:auto;min-height:49px;gap:10px;flex-wrap:wrap;padding-top:10px;padding-bottom:10px}.research-view .panel-head{flex-wrap:wrap}.research-view .policy-content pre{font-size:11px}}
