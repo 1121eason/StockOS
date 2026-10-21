@@ -79,6 +79,63 @@ def request(port, method, path, body=None, headers=None):
     return result
 
 
+def test_nvda_without_configuration_never_uses_demo_data(server):
+    status, _, body = request(server, "GET", "/api/nvda")
+    assert status == 200
+    assert json.loads(body)["configured"] is False
+    assert json.loads(body)["research"] is None
+    assert (
+        request(server, "POST", "/api/nvda/update", "{}", {"Content-Type": "application/json"})[0]
+        == 409
+    )
+
+
+@pytest.fixture
+def nvda_server():
+    from types import SimpleNamespace
+
+    calls = []
+
+    def update():
+        calls.append(True)
+        return {"snapshot_id": "synthetic", "research": {"synthetic_only": True}}
+
+    instance = ui.ResearchHTTPServer(("127.0.0.1", 0), ui.Handler)
+    instance.workbench = SimpleNamespace(update=update, load=update, last_attempt=None)
+    thread = threading.Thread(target=instance.serve_forever, daemon=True)
+    thread.start()
+    yield instance.server_address[1], calls
+    instance.shutdown()
+    instance.server_close()
+    thread.join(timeout=2)
+
+
+def test_nvda_manual_update_has_no_path_ticker_or_model_input(nvda_server):
+    port, calls = nvda_server
+    headers = {"Content-Type": "application/json"}
+    assert request(port, "POST", "/api/nvda/update", "{}", headers)[0] == 200
+    assert len(calls) == 1
+    for body in ('{"ticker":"OTHER"}', '{"source_db":"/private/file"}', "[]", "null", "bad JSON"):
+        assert request(port, "POST", "/api/nvda/update", body, headers)[0] == 422
+    assert len(calls) == 1
+
+
+def test_nvda_manual_update_rejects_cross_origin_and_non_json(nvda_server):
+    port, calls = nvda_server
+    assert (
+        request(
+            port,
+            "POST",
+            "/api/nvda/update",
+            "{}",
+            {"Origin": "https://external.example", "Content-Type": "application/json"},
+        )[0]
+        == 403
+    )
+    assert request(port, "POST", "/api/nvda/update", "{}", {"Content-Type": "text/plain"})[0] == 422
+    assert len(calls) == 0
+
+
 def test_http_allowlist_no_database_credentials_or_directory_exposure(server):
     for path in ["/.env", "/data/qve.db", "/ui/fixtures/demo.json", "/src/", "/../README.md"]:
         assert request(server, "GET", path)[0] == 404
