@@ -1,5 +1,5 @@
 import re
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Any
 
@@ -7,6 +7,7 @@ from bs4 import BeautifulSoup, Tag
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from valuation_engine.calendar_math import fiscal_start as fiscal_start
 from valuation_engine.config import Settings
 from valuation_engine.db.schema import GuidanceItem, SegmentFact
 from valuation_engine.db.store import add_fact, company, digest, document, issue
@@ -57,12 +58,6 @@ LABELS = {
     "free cash flow": "company_reported_fcf",
     "principal payments on property and equipment and intangible assets": "equipment_principal_payments",
 }
-
-
-def fiscal_start(fy: int, fq: int) -> date:
-    jan = date(fy - 1, 1, 31)
-    last_sunday = jan - timedelta(days=(jan.weekday() + 1) % 7)
-    return last_sunday + timedelta(days=1, weeks=13 * (fq - 1))
 
 
 def cell_number(text: str) -> Decimal | None:

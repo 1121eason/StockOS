@@ -1,0 +1,13 @@
+{
+  "name": "stockos-ui-checks",
+  "private": true,
+  "type": "module",
+  "description": "Optional DOM interaction tests; the local UI runtime needs only Python.",
+  "engines": {"node": ">=18"},
+  "scripts": {
+    "test": "node --experimental-vm-modules --test ui/*.test.mjs",
+    "check": "node --check ui/app.js && node --check ui/domain.mjs && node --check ui/research.js",
+    "build": "python3 scripts/build_ui.py"
+  },
+  "devDependencies": {"jsdom": "26.1.0"}
+}

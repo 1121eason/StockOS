@@ -61,6 +61,27 @@ def validate_evidence(draft, block_map):
 def confidence(items, contradictory=()):
     if not items:
         return 0.0
+    statement_weights = {
+        "reported_fact": 0.95,
+        "management_statement": 0.8,
+        "risk_disclosure": 0.65,
+    }
+    certainty_weights = {"explicit": 1, "qualified": 0.8, "ambiguous": 0.5}
+    # Only admitted evidence has the provenance and classifications needed for scoring.
+    # Validate before deduplication so a malformed duplicate cannot be silently discarded.
+    for item in [*items, *contradictory]:
+        if any(
+            not isinstance(item.get(field), str) or not item[field].strip()
+            for field in ("span_hash", "source_hash", "block_id")
+        ):
+            raise ValueError("Confidence requires complete evidence provenance")
+        if (
+            item.get("statement_type") not in statement_weights
+            or item.get("certainty") not in certainty_weights
+            or type(item.get("tier")) is not int
+            or item["tier"] not in (1, 2)
+        ):
+            raise ValueError("Confidence requires valid evidence classifications")
     # The same quote copied into another source is not independent evidence.
     unique: dict[str, dict] = {}
     for item in sorted(items, key=lambda x: (x["span_hash"], x["source_hash"], x["block_id"])):
@@ -69,10 +90,8 @@ def confidence(items, contradictory=()):
     distinct = {(x["source_hash"], x["block_id"]) for x in items}
     source_count = len({x["source_hash"] for x in items})
     base = sum(
-        {"reported_fact": 0.95, "management_statement": 0.8, "risk_disclosure": 0.65}[
-            x["statement_type"]
-        ]
-        * {"explicit": 1, "qualified": 0.8, "ambiguous": 0.5}[x["certainty"]]
+        statement_weights[x["statement_type"]]
+        * certainty_weights[x["certainty"]]
         * (1 if x["tier"] == 1 else 0.9)
         for x in items
     ) / len(items)
@@ -107,6 +126,9 @@ def admit_feature(draft, evidence):
     ]
     contradict = sorted(set(draft.contradicting_evidence + auto))
     support = sorted(set(draft.supporting_evidence) - set(contradict))
+    # Moving mixed/overlapping evidence must not leave a signed assessment unsupported.
+    if expected and not any(evidence[k]["implication"] == expected for k in support):
+        return None, "direction_unsupported"
     all_ids = sorted(set(ids + contradict))
     items = [evidence[k] for k in all_ids]
     return {

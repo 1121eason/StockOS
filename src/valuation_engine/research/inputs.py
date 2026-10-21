@@ -6,6 +6,8 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from valuation_engine.calendar_math import period_name as period_name
+from valuation_engine.calendar_math import period_tuple as period_tuple
 from valuation_engine.db.schema import FinancialFact, GuidanceItem, SourceDocument
 from valuation_engine.db.store import digest, read_document
 from valuation_engine.hardening.availability import AvailabilityResolver
@@ -14,15 +16,6 @@ from valuation_engine.ingestion.ir import parse_release
 from valuation_engine.normalization.quarterly import PointInTimeRepository, Quarter, prior_period
 from valuation_engine.research.numbers import POLICY, D, div
 from valuation_engine.time import ET, aware, calculate_next_tradable_timestamp
-
-
-def period_name(fy, fq):
-    return f"FY{fy}-Q{fq}"
-
-
-def period_tuple(name):
-    fy, fq = name.removeprefix("FY").split("-Q")
-    return int(fy), int(fq)
 
 
 class FinancialInputs:

@@ -175,4 +175,7 @@ def test_installed_subscription_auth_spelling(tmp_path):
 def test_official_cli_os_identity_environment(monkeypatch):
     for key in ("USER", "LOGNAME", "SHELL"):
         monkeypatch.setenv(key, "os-identity-test")
-    assert all(cli.subscription_environment()[k] == "os-identity-test" for k in ("USER", "LOGNAME", "SHELL"))
+    assert all(
+        cli.subscription_environment()[k] == "os-identity-test"
+        for k in ("USER", "LOGNAME", "SHELL")
+    )

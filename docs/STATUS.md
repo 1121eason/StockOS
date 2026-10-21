@@ -1,5 +1,13 @@
 # StockOS status
 
+## 2026-10-21 source integration
+
+The [four-layer progress and branch integration report](PROGRESS_REPORT_2026_10_21.md) records the integrated source baseline, conflict decisions, offline test results, and remaining acceptance work. NVIDIA financial research and Regime retain their existing milestone status; AI formal acceptance, investment-decision acceptance, and long-term automation remain incomplete.
+
+## Preserved historical execution status
+
+Provider availability, quota, login, and run counts below are historical observations. They were not refreshed by the source integration.
+
 M4.1 Antigravity integration is implemented; live validation remains blocked by the Antigravity tool-isolation contract. Antigravity CLI 1.2.2 is installed at /Users/eason/.local/bin/agy. Runtime capability discovery confirms the required flags. Official login is now usable and Gemini 3.1 Pro High returned valid structured JSON. Two real constant-input probes exposed the full tool registry despite tools: [] and tools: [finish] configurations. The adapter correctly reports isolation_contract_failure and refuses historical financial inputs. No financial context has been sent to Antigravity. No repeated login is needed.
 
 Claude remains primary and quota_limited at the last real execution (reset reported 2026-09-13 20:00 Australia/Brisbane). Its 388 admitted partial evidence rows remain immutable; completed quarters 0/7, actual human reviews 0/35. Legacy Gemini consumer route is deprecated; Codex transport isolation passed; its historical pilot failed. API providers remain inactive.

@@ -1,11 +1,11 @@
 """Frozen ForecastPolicyV1: interpretable GAAP income statement and cash-flow baseline."""
 
 from dataclasses import dataclass
-from typing import Any
+from datetime import date, datetime
+from typing import TYPE_CHECKING, Any, Protocol
 
-from valuation_engine.ingestion.ir import fiscal_start
-from valuation_engine.normalization.quarterly import prior_period
-from valuation_engine.research.inputs import FinancialInputs, period_name
+from valuation_engine.calendar_math import fiscal_start, period_name, prior_period
+from valuation_engine.research.cashflows import fcff_proxy as fcff_proxy
 from valuation_engine.research.numbers import (
     POLICY,
     D,
@@ -17,6 +17,41 @@ from valuation_engine.research.numbers import (
     stats,
     total,
 )
+
+if TYPE_CHECKING:
+    from valuation_engine.research.inputs import FinancialInputs as FinancialInputs
+
+
+class ForecastInputs(Protocol):
+    """Financial observations supplied to calculations, independent of their storage."""
+
+    anchor: tuple[int, int]
+    at: datetime
+    basis_date: date
+    current: Any
+    history: list[Any]
+    warnings: list[dict[str, Any]]
+
+    def value(self, quarter: Any, metric: str) -> D | None: ...
+    def quarter(self, fy: int, fq: int) -> Any: ...
+    def guidance_accuracy(self) -> dict[str, list[dict[str, Any]]]: ...
+    def guidance_for(self, fy: int, fq: int) -> dict[str, Any]: ...
+    def guidance_record(self, guidance: Any) -> dict[str, Any]: ...
+    def provenance(self) -> dict[str, Any]: ...
+
+
+def __getattr__(name: str) -> Any:
+    # Preserve the legacy concrete export without loading its adapters for calculations.
+    if name == "FinancialInputs":
+        from valuation_engine.research.inputs import FinancialInputs
+
+        return FinancialInputs
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+def __dir__() -> list[str]:
+    return sorted(set(globals()) | {"FinancialInputs"})
+
 
 FIELDS = (
     "revenue",
@@ -143,7 +178,7 @@ def aggregate(rows, kind, fy):
     )
 
 
-def produce(data: FinancialInputs, policy: ForecastPolicyV1):
+def produce(data: ForecastInputs, policy: ForecastPolicyV1):
     warnings: list[dict[str, Any]] = []
     recent = data.history[: POLICY["recent_window"]]
     val = data.value
@@ -582,17 +617,4 @@ def financial_row(
             "fcf_margin_component": margin_fcf,
             "cash_conversion_component": conversion_fcf,
         },
-    )
-
-
-def fcff_proxy(row):
-    if row is None:
-        return None
-    fcf, ni, oi, tax = (
-        row.get(k) for k in ("free_cash_flow", "net_income", "operating_income", "tax_rate")
-    )
-    return (
-        fcf - ni + oi * (1 - tax)
-        if all(v is not None for v in (fcf, ni, oi, tax)) and 0 <= tax <= 1
-        else None
     )
