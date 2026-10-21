@@ -22,6 +22,61 @@ def inputs():
     return {"wacc": 10, "terminal_growth": 2.5, "growth": 0, "cash": 120, "debt": 80, "shares": 100}
 
 
+@pytest.mark.parametrize(
+    "value",
+    [
+        "http://stockos.example",
+        "https://user:password@stockos.example",
+        "https://stockos.example/path",
+        "https://stockos.example?query=1",
+        "https://stockos.example#fragment",
+        "https://stockos.example:8080",
+        "https://stockos.example evil.example",
+        "https://stockos.example,evil.example",
+    ],
+)
+def test_proxy_origin_rejects_ambiguous_or_insecure_values(value):
+    with pytest.raises(ValueError):
+        ui.validate_proxy_origin(value)
+
+
+def test_proxy_origin_is_exact_https_only():
+    assert ui.validate_proxy_origin("https://stockos.example") == "https://stockos.example"
+
+
+def test_private_proxy_keeps_host_and_cross_origin_guards():
+    from types import SimpleNamespace
+
+    instance = ui.ResearchHTTPServer(("127.0.0.1", 0), ui.Handler)
+    instance.public_origin = "https://stockos.example"
+    calls = []
+
+    def update():
+        calls.append(True)
+        return {"refresh_queued": True}
+
+    instance.workbench = SimpleNamespace(update=update)
+    thread = threading.Thread(target=instance.serve_forever, daemon=True)
+    thread.start()
+    port = instance.server_address[1]
+    headers = {"Content-Type": "application/json", "Origin": instance.public_origin}
+    try:
+        assert request(port, "POST", "/api/nvda/update", "{}", headers)[0] == 200
+        for overrides in (
+            {"Origin": "https://stockos.example.evil.test"},
+            {"Host": "stockos.example"},
+            {"Sec-Fetch-Site": "cross-site"},
+        ):
+            assert (
+                request(port, "POST", "/api/nvda/update", "{}", {**headers, **overrides})[0] == 403
+            )
+        assert len(calls) == 1
+    finally:
+        instance.shutdown()
+        instance.server_close()
+        thread.join(timeout=2)
+
+
 def test_demo_retains_negative_values_and_unavailable_price():
     result = ui.workspace("atlas")
     assert result["mode"] == "demo"

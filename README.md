@@ -5,6 +5,8 @@ NVDA only. No trading signals, fitted thresholds, brokerage connection or claime
 
 Current source integration and four-layer progress: [2026-10-21 progress report](docs/PROGRESS_REPORT_2026_10_21.md). Branch integration does not constitute AI, investment-decision, or production acceptance.
 
+**NVDA continuous research, in progress:** [Product delivery and acceptance matrix](docs/product/DELIVERY_2026_10_22.md), [operation and cloud preparation](docs/product/OPERATIONS.md). Adds independent quote updates, official-source collection, durable jobs, version history and recovery. New financial reconciliation, forward target valuation, AI acceptance and actual cloud deployment remain separate gates.
+
 **NVDA research workbench:** [Open and update a connected quarterly research page](docs/NVDA_WORKBENCH.md), with a sourced regular-session quote beside the dated model value. It reads existing formal data without writing it, reconciles the original formulas, and saves separate local snapshots. [Delivery and validation](docs/NVDA_WORKBENCH_DELIVERY_2026_10_21.md); [independent AI acceptance workstream](docs/AI_RESEARCH_SUPPLEMENT_2026_10_21.md).
 
 **Source-only checkout:** Runtime NVDA databases and original research artifacts are not included. Historical milestone evidence below describes separate local runs, not data available in a fresh clone. The [isolated offline research workflow](docs/RESEARCH_WORKSPACE.md) imports explicitly supplied bundles into a separate store; [UI instructions](UI_START_HERE.md) explain its read-only view. Missing inputs stay unavailable. The [backtest timing audit](docs/BACKTEST_TEMPORAL_AUDIT.md) documents reconstruction-only classification and execution limitations.

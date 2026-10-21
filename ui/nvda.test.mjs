@@ -38,3 +38,18 @@ test('unsafe source labels and URLs cannot create script markup or executable li
 test('old quote is labeled stale and cannot show a current-price comparison',async()=>{
  const d=fixture();d.research.quote.quoted_at='2020-01-01T00:00:00Z';const a=await app(()=>d);try{assert.match(a.doc.body.textContent,/報價已過期/);assert.doesNotMatch(a.doc.querySelector('.comparison-note').textContent,/\+25.00%/);}finally{a.dom.window.close();}
 });
+test('automated product shows real quote, pending target and source queue without inventing a target',async()=>{
+ const d=fixture();Object.assign(d,{operations:{worker_running:true,coverage:'synthetic official source coverage',heartbeat_at:new Date().toISOString(),jobs:[{id:1,label:'股價更新',status:'Succeeded',attempts:1}]},target_valuation:{reason:'12 個月方法待驗收'},publication_status:'Partial',events:[{title:'<img src=x onerror=alert(1)>',url:'javascript:bad()',publication_date:'2026-10-21',received_at:new Date().toISOString(),model_impact:'待對帳',status:'parsed_pending_reconciliation'}],alerts:[]});
+ const a=await app(()=>d);try{assert.equal(a.doc.querySelector('#operations').hidden,false);assert.match(a.doc.querySelector('#operations').textContent,/背景更新運作中/);assert.match(a.doc.querySelector('.target-card').textContent,/尚未發布/);assert.match(a.doc.querySelector('#model-price').textContent,/250.00/);assert.equal(a.doc.querySelector('#operations img'),null);assert.equal(a.doc.querySelector('#operations a').getAttribute('href'),'#');}finally{a.dom.window.close();}
+});
+test('automated refresh reports queued work rather than successful publication',async()=>{
+ const d=fixture();Object.assign(d,{operations:{worker_running:true,coverage:'synthetic',jobs:[]},target_valuation:{reason:'未提供'},publication_status:'Partial',events:[],alerts:[],refresh_queued:true});
+ const a=await app(()=>d);try{a.doc.querySelector('#update').click();await until(()=>!a.doc.querySelector('#update').disabled);assert.match(a.doc.querySelector('#message').textContent,/已排入/);assert.doesNotMatch(a.doc.querySelector('#message').textContent,/研究已更新並保存/);}finally{a.dom.window.close();}
+});
+test('automated startup can show operational state before the first research publication',async()=>{
+ const a=await app(()=>({configured:true,research:null,operations:{worker_running:true,coverage:'synthetic',jobs:[]},publication_status:'Updating',events:[],alerts:[]}));try{assert.equal(a.doc.querySelector('#operations').hidden,false);assert.match(a.doc.querySelector('#operations').textContent,/背景更新運作中/);assert.match(a.doc.querySelector('#research').textContent,/還沒有可讀取/);}finally{a.dom.window.close();}
+});
+test('cloud deployment label and newest announcement order follow the API',async()=>{
+ const d=fixture();Object.assign(d,{operations:{deployment:'cloud',worker_running:true,coverage:'synthetic',jobs:[]},publication_status:'Partial',events:[{title:'Older item',url:'https://example.com/old',publication_date:'2026-01-01'},{title:'Newer item',url:'https://example.com/new',publication_date:'2026-10-21'}],alerts:[]});
+ const a=await app(()=>d);try{assert.match(a.doc.querySelector('#environment-label').textContent,/雲端/);assert.match(a.doc.querySelector('#operations').textContent,/不受個人電腦關機影響/);assert.match(a.doc.querySelector('#operations a').textContent,/Newer item/);}finally{a.dom.window.close();}
+});
