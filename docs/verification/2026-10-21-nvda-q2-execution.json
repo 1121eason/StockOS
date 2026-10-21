@@ -176,8 +176,15 @@
     "targeted_tests": 122,
     "targeted_failed": 0,
     "targeted_errors": 0,
-    "full_suite": null,
-    "full_suite_status": "PENDING_NATIVE_TEST_RUN",
+    "full_suite": {
+      "tests": 1387,
+      "passed": 1382,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 5,
+      "seconds": 54.111
+    },
+    "full_suite_status": "COMPLETE",
     "ruff": "PASS",
     "format_files": 148,
     "mypy_source_files": 88,
@@ -201,7 +208,9 @@
     "validation/targeted-final.log": "6921640e6aa4ce753dcbcbc186086923d8293aeb555761fbae814c22da893e55",
     "validation/ruff-final.log": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
     "validation/format-final.log": "b200c2b9a71ab20438b8547673b386497de222f9f1914970a26d7c745c288814",
-    "validation/mypy-final.log": "7aebc3c9c840c3e075d7701a826136c2571eab60a0ce5c94514098ba0869deaa"
+    "validation/mypy-final.log": "7aebc3c9c840c3e075d7701a826136c2571eab60a0ce5c94514098ba0869deaa",
+    "validation/pytest-final.xml": "e7d1f0e8005a347c556d6a5eae3b28090c444af15a67cf17f5144002f2e1036c",
+    "validation/pytest-final.log": "cffc864655347394853f9799217d5fe67595bf16f8a5b2f7743ba4dbd57aafb4"
   },
   "source_files_sha256": {
     "src/valuation_engine/ai/quarter_runtime.py": "666e2761e969f6bb106c7d84c8a8ff948871085ade6538d38c0d4ae871e0c836",
@@ -213,7 +222,7 @@
     "tests/unit/test_q2_source_evidence.py": "81eeee00e4cd69e1dd4e8fcaa71567d8acc9600833a7aeb75bae8a9522bc707f",
     "tests/unit/test_nvda_q2_candidate_runner.py": "e7e0a373a253233e2adacddaf8e4d2122cc0bd4f404d751fc5c24705ddd2be4d",
     "docs/NVDA_AI_RUNTIME_V2_DECISION.md": "f6d6bdba3986f4a78a6bf96be1dcbb24b818cbe664d0975ff2a3827935df50e5",
-    "docs/NVDA_Q2_SOURCE_AND_EXECUTION_2026_10_21.md": "ea310185fdb9b1d9b7d003b4332d3b0e8328ee870280f01f17cb118702b5dcdd",
+    "docs/NVDA_Q2_SOURCE_AND_EXECUTION_2026_10_21.md": "e30a6b5e8c85241c0a00bfcb391852964dddc7fa62a3b59e5f33c239ce414f72",
     "docs/AI_SINGLE_QUARTER_PROGRESS_2026_10_21.md": "fb4a25cc5229dbde28d249d2b9c43d3b2e15dd668420edc9a400dd2aecb2b5ad"
   }
 }
