@@ -1,6 +1,5 @@
 """Unit tests for ValuationBridgeV1."""
 
-import pytest
 from valuation_engine.valuation.bridge import ValuationBridgeV1
 
 
@@ -14,10 +13,10 @@ def test_composite_score_empty():
 def test_composite_score_weighting():
     bridge = ValuationBridgeV1()
     features = {
-        "demand_momentum": (0.8, 0.9),       # growth: 0.72
-        "supply_constraint": (-0.5, 0.8),     # headwinds: -0.40
-        "pricing_power": (0.4, 0.7),          # moat: 0.28
-        "inventory_quality": (0.2, 0.6),      # quality: 0.12
+        "demand_momentum": (0.8, 0.9),  # growth: 0.72
+        "supply_constraint": (-0.5, 0.8),  # headwinds: -0.40
+        "pricing_power": (0.4, 0.7),  # moat: 0.28
+        "inventory_quality": (0.2, 0.6),  # quality: 0.12
     }
     score, groups = bridge.compute_composite_score(features)
     assert groups["growth"] == 0.72

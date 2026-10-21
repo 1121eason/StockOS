@@ -7,8 +7,7 @@ Architectural contract:
 """
 
 from dataclasses import asdict, dataclass
-import math
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 
 @dataclass(frozen=True)
@@ -16,36 +15,36 @@ class ValuationBridgeResult:
     quarter: str
     as_of_date: str
     market_price: float
-    
+
     # 1. Quant Baseline (Zero AI intervention)
     quant_dcf_base: float
     quant_expectations_gap: float
-    market_implied_growth_rate: Optional[float]
-    quant_forecast_growth_rate: Optional[float]
-    
+    market_implied_growth_rate: float | None
+    quant_forecast_growth_rate: float | None
+
     # 2. AI Qualitative Intelligence & Tail Haircuts
     ai_composite_score: float
     tail_risk_haircut: float
-    
+
     # 3. Scenario Valuation Channels
     ai_fair_value_base: float
     ai_fair_value_bull: float
     ai_fair_value_bear: float
     ai_fair_value_stress: float
-    
+
     # 4. Expectations Gaps & Stance
     expectations_gap: float  # AI gap (retained for backward compatibility)
     ai_expectations_gap: float
     valuation_stance: str
-    
+
     # 5. Attributions, Guards & Challenges
-    group_scores: Dict[str, float]
-    challenge_breakdown: Dict[str, int]
-    double_counting_adjustments: Dict[str, float]
-    structural_adjustments: Dict[str, float]
+    group_scores: dict[str, float]
+    challenge_breakdown: dict[str, int]
+    double_counting_adjustments: dict[str, float]
+    structural_adjustments: dict[str, float]
     method_version: str = "ValuationBridgeV2"
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
@@ -110,8 +109,8 @@ class ValuationBridgeV2:
 
     def compute_composite_score(
         self,
-        features: Dict[str, Tuple[float, float]],
-        overrides: Optional[Dict[str, float]] = None,
+        features: dict[str, tuple[float, float]],
+        overrides: dict[str, float] | None = None,
         guidance_revenue_revision: float = 0.0,
         return_adjustments: bool = False,
     ) -> Any:
@@ -120,8 +119,8 @@ class ValuationBridgeV2:
         Includes Double-Counting Guard when guidance revision is positive.
         """
         overrides = overrides or {}
-        group_scores: Dict[str, float] = {}
-        double_counting_adjustments: Dict[str, float] = {}
+        group_scores: dict[str, float] = {}
+        double_counting_adjustments: dict[str, float] = {}
         weighted_sum = 0.0
         total_weight = 0.0
 
@@ -130,11 +129,13 @@ class ValuationBridgeV2:
         growth_dampener = 1.0
         if guidance_revenue_revision > 0.0:
             growth_dampener = max(0.5, 1.0 - min(0.5, guidance_revenue_revision))
-            double_counting_adjustments["guidance_revenue_revision"] = round(guidance_revenue_revision, 4)
+            double_counting_adjustments["guidance_revenue_revision"] = round(
+                guidance_revenue_revision, 4
+            )
             double_counting_adjustments["growth_feature_dampener"] = round(growth_dampener, 4)
 
         for group_name, (keys, weight) in self.FEATURE_GROUPS.items():
-            vals: List[float] = []
+            vals: list[float] = []
             for k in keys:
                 if k in overrides:
                     val = float(overrides[k])
@@ -168,8 +169,8 @@ class ValuationBridgeV2:
         return round(composite, 4), group_scores
 
     def compute_challenge_haircut(
-        self, challenges: List[Dict[str, Any]]
-    ) -> Tuple[float, Dict[str, int]]:
+        self, challenges: list[dict[str, Any]]
+    ) -> tuple[float, dict[str, int]]:
         """Calculate tail-risk haircut based on grounded advisory challenges."""
         upsides = 0
         downsides = 0
@@ -203,18 +204,21 @@ class ValuationBridgeV2:
         as_of_date: str,
         market_price: float,
         quant_dcf_base: float,
-        features: Dict[str, Tuple[float, float]],
-        challenges: List[Dict[str, Any]],
-        overrides: Optional[Dict[str, float]] = None,
-        market_implied_growth_rate: Optional[float] = None,
-        quant_forecast_growth_rate: Optional[float] = None,
+        features: dict[str, tuple[float, float]],
+        challenges: list[dict[str, Any]],
+        overrides: dict[str, float] | None = None,
+        market_implied_growth_rate: float | None = None,
+        quant_forecast_growth_rate: float | None = None,
         guidance_revenue_revision: float = 0.0,
     ) -> ValuationBridgeResult:
         """
         Bridge quantitative DCF with qualitative signals to generate dual-track fair value channels.
         """
         composite_score, group_scores, dc_adjustments = self.compute_composite_score(
-            features, overrides, guidance_revenue_revision=guidance_revenue_revision, return_adjustments=True
+            features,
+            overrides,
+            guidance_revenue_revision=guidance_revenue_revision,
+            return_adjustments=True,
         )
         haircut, challenge_breakdown = self.compute_challenge_haircut(challenges)
 
@@ -223,7 +227,9 @@ class ValuationBridgeV2:
 
         # 2. Structural Parameter Attribution
         # Moat reduces WACC (-0.5% per 1.0 moat score), Headwinds increase WACC (+0.7% per 1.0 headwind score)
-        wacc_adjustment_bp = (-50.0 * group_scores.get("moat", 0.0)) + (70.0 * max(0.0, -group_scores.get("headwinds", 0.0)))
+        wacc_adjustment_bp = (-50.0 * group_scores.get("moat", 0.0)) + (
+            70.0 * max(0.0, -group_scores.get("headwinds", 0.0))
+        )
         growth_adjustment_bp = 150.0 * group_scores.get("growth", 0.0)
         structural_adjustments = {
             "wacc_delta_basis_points": round(wacc_adjustment_bp, 1),
@@ -255,8 +261,12 @@ class ValuationBridgeV2:
             market_price=round(market_price, 2),
             quant_dcf_base=round(quant_dcf_base, 2),
             quant_expectations_gap=round(quant_gap, 4),
-            market_implied_growth_rate=round(market_implied_growth_rate, 4) if market_implied_growth_rate is not None else None,
-            quant_forecast_growth_rate=round(quant_forecast_growth_rate, 4) if quant_forecast_growth_rate is not None else None,
+            market_implied_growth_rate=round(market_implied_growth_rate, 4)
+            if market_implied_growth_rate is not None
+            else None,
+            quant_forecast_growth_rate=round(quant_forecast_growth_rate, 4)
+            if quant_forecast_growth_rate is not None
+            else None,
             ai_composite_score=round(composite_score, 4),
             tail_risk_haircut=round(haircut, 4),
             ai_fair_value_base=round(ai_base, 2),

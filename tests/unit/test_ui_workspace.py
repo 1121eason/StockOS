@@ -19,8 +19,7 @@ SPEC.loader.exec_module(ui)
 
 
 def inputs():
-    return {"wacc": 10, "terminal_growth": 2.5, "growth": 0,
-            "cash": 120, "debt": 80, "shares": 100}
+    return {"wacc": 10, "terminal_growth": 2.5, "growth": 0, "cash": 120, "debt": 80, "shares": 100}
 
 
 def test_demo_retains_negative_values_and_unavailable_price():
@@ -41,8 +40,7 @@ def test_empty_company_does_not_become_a_zero_valuation():
 
 def test_exact_zero_dcf_is_available_and_not_treated_as_missing():
     company = {"cashflows": [100]}
-    result = ui.calculate(company, {**inputs(), "cash": 0, "debt": 1000,
-                                    "terminal_growth": 0})
+    result = ui.calculate(company, {**inputs(), "cash": 0, "debt": 1000, "terminal_growth": 0})
     assert result["status"] == "available"
     assert Decimal(result["per_share"]) == 0
 
@@ -95,8 +93,12 @@ def test_http_calculation_and_cross_origin_guard(server):
     headers = {"Content-Type": "application/json"}
     status, _, content = request(server, "POST", "/api/sandbox", body, headers)
     assert status == 200 and json.loads(content)["status"] == "available"
-    assert request(server, "POST", "/api/sandbox", body,
-                   {**headers, "Origin": "https://evil.example"})[0] == 403
+    assert (
+        request(
+            server, "POST", "/api/sandbox", body, {**headers, "Origin": "https://evil.example"}
+        )[0]
+        == 403
+    )
     assert request(server, "POST", "/api/sandbox", "{}", headers)[0] == 422
     assert request(server, "GET", "/api/workspace?company=unknown")[0] == 404
     assert request(server, "POST", "/api/sandbox", "[]", headers)[0] == 422
@@ -116,20 +118,35 @@ def test_research_http_loads_canonical_saved_result_without_demo_substitution(tm
     from valuation_engine.research.workspace import import_bundle
 
     def evidence(value):
-        return {"value": value, "source_ids": ["filing"],
-                "available_at": "2020-01-01T00:00:00Z"}
+        return {"value": value, "source_ids": ["filing"], "available_at": "2020-01-01T00:00:00Z"}
+
     bundle = {
-        "schema_version": 1, "ticker": "TEST", "name": "Synthetic contract test",
-        "as_of": "2020-01-01T00:00:00Z", "data_kind": "synthetic",
-        "sources": [{"id": "filing", "url": "https://example.com/synthetic",
-                     "published_at": "2019-12-31T00:00:00Z",
-                     "retrieved_at": "2026-01-01T00:00:00Z", "sha256": "a" * 64}],
-        "inputs": {"cash": evidence("0"), "debt": evidence("1000"),
-                   "shares": evidence("100"), "wacc": evidence("0.1"),
-                   "terminal_growth": evidence("0"),
-                   "forecast_cashflows": [evidence("100") for _ in range(5)]},
-        "assumptions": {"classification": "research_reconstructed_not_historical_oos",
-                        "rationale": "Synthetic test values; no historical model vintage."},
+        "schema_version": 1,
+        "ticker": "TEST",
+        "name": "Synthetic contract test",
+        "as_of": "2020-01-01T00:00:00Z",
+        "data_kind": "synthetic",
+        "sources": [
+            {
+                "id": "filing",
+                "url": "https://example.com/synthetic",
+                "published_at": "2019-12-31T00:00:00Z",
+                "retrieved_at": "2026-01-01T00:00:00Z",
+                "sha256": "a" * 64,
+            }
+        ],
+        "inputs": {
+            "cash": evidence("0"),
+            "debt": evidence("1000"),
+            "shares": evidence("100"),
+            "wacc": evidence("0.1"),
+            "terminal_growth": evidence("0"),
+            "forecast_cashflows": [evidence("100") for _ in range(5)],
+        },
+        "assumptions": {
+            "classification": "research_reconstructed_not_historical_oos",
+            "rationale": "Synthetic test values; no historical model vintage.",
+        },
     }
     store = tmp_path / "private.sqlite"
     stored = import_bundle(store, bundle)

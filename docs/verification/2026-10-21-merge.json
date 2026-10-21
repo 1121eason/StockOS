@@ -1,0 +1,94 @@
+{
+  "date": "2026-10-21",
+  "timezone": "Australia/Brisbane",
+  "repository": "1121eason/StockOS",
+  "original_remote_heads": {
+    "agent/init-d459c678-ffe9-4988-a374-b1be58e35eea": "0cc120211d1d9c80acdc0306902228cc87edfea6",
+    "codex/stockos-internal-policy-20261018": "0d71b713d64deccfbf1f77614dbea4bed8d63fe1",
+    "codex/stockos-offline-source-20261015": "0c9d858da7eb92e2387cb918bbbe5968ad2a1a54",
+    "codex/stockos-real-flow-20261017": "74bdf6011d8d1faf768fd7d43278ea9d238ce50d",
+    "codex/stockos-ui-20261016": "640f77c9e3cc5a850803dcc5d79b3f89c065a61b",
+    "main": "a85acc9b5c66b3888b6aeb07cd80771b2dd598af",
+    "sync/mac-source": "c17cb8da0b54689b99bf6772e715887cf3d268d5"
+  },
+  "integration_code_base": "0d71b713d64deccfbf1f77614dbea4bed8d63fe1",
+  "additional_merge_parent": "c17cb8da0b54689b99bf6772e715887cf3d268d5",
+  "checks": {
+    "python": {
+      "tests": 1314,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 5,
+      "passed": 1309
+    },
+    "ui": {
+      "tests": 20,
+      "passed": 20,
+      "failed": 0,
+      "skipped": 0
+    },
+    "ruff": "PASS",
+    "format": {
+      "status": "PASS",
+      "files": 135
+    },
+    "mypy": {
+      "status": "PASS",
+      "files": 80
+    },
+    "ui_syntax": "PASS",
+    "ui_build": "PASS",
+    "github_actions": "NO_WORKFLOW_PRESENT"
+  },
+  "skips": {
+    "isolated_postgresql_required": 1,
+    "actual_nvda_archive_not_installed": 3,
+    "full_backtest_database_manifest_not_installed": 1
+  },
+  "preserved_sync_overlap_sha256": {
+    "docs/AI_ANALYST_METHOD.md": "ff81c8e30c997db78e14dfe7fdfc8c5b1969dfe9284e8649c8a5c54650ce5420",
+    "docs/FSI_S2_EXECUTION_WORKORDER.md": "a164d5f10da5206dec2fabdbf3bf6f0226c79da0751456fb283912f00cf0f558",
+    "scripts/generate_review_worksheet.py": "22c1e134eb0bedea0fcb6203ed19182f7e4f7165a762dd1e68522a28e86c1eaa",
+    "scripts/import_review_submissions.py": "1d8a31b95dc61f96d04922edf880cdc09f4638286efc8218c7edefc72081f640",
+    "scripts/run_fsi_cohort_expansion.py": "90956fb6ddf7fb19da367d8c695891161e2786a12e604c43791b889598bf18e6",
+    "scripts/run_fsi_s2_experiment.py": "72fa3a1e0f5ef25aa62a2a276327ae0b8793a83e672ac699b6be8fb3b3bba609",
+    "src/valuation_engine/ai/contracts.py": "3327435670f96f63ba6b13fdce3979cbba17701396a74359ad1c2399468f9301",
+    "src/valuation_engine/ai/guards.py": "9edb60736cae6a995b65891dedb7675c0decac6efe3719afc65aca26cf65487e",
+    "src/valuation_engine/ai/prompts.py": "fc0e72bf5ffb59c2566447533e83cbfb2da149b0b1328c2d80162a936c8e7c09",
+    "src/valuation_engine/ai/service.py": "248a73bd93aeb856e837a8d28c413319193c9de56a0edb42c44d657cb342665d",
+    "src/valuation_engine/ai/validation.py": "de8510f223aab797700d5f40bad43d8544ded02b6ae219b3c8f2e933d05a2996",
+    "tests/unit/test_human_review_tools.py": "89a626aa0978d17fc973127755d707149a6a399d0692d34d9b63b07e861dcddc"
+  },
+  "local_evidence_sha256": {
+    "pytest-final.xml": "4bcef20e89fd5700ab29d4fef0079b7abf909edccecd40f642d473641499017a",
+    "pytest-final.log": "0573880321d8346ecf9ac30a5fb56ec01905c5db18c4b82d182cfd09bbc279db",
+    "ui-test-final.log": "ace1c2ee825bf3bbca3ca8302bd55dd631c91172913d42f9143e5a0b018a0de9",
+    "ui-check.log": "d5a1d1839d5697e0353fa3eb95fc6fa86e535649b68ec0bbeb0916de69a45573",
+    "ui-build.log": "ad28a3b7cf4d3859bda5ee5ff964be61c7c4928e0cfe075fdd71b63fd563e5d2",
+    "ruff-final.log": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+    "format-final.log": "0902f6f035df96a12e64f773633814e2a1efe93fbd98425ee0c0750d59b4a35b",
+    "mypy-final.log": "2ee1bfc13507fda246a3220aaeaa3f3dd56dcc26a996aa35567c2871279b5ecd"
+  },
+  "boundaries": {
+    "live_model_execution": false,
+    "formal_database_write": false,
+    "deployment": false,
+    "original_dirty_checkout_modified": false,
+    "formal_acceptance_granted": false
+  },
+  "reproduction": [
+    "env -u QVE_TEST_POSTGRES_URL PYTHONPATH=src python -m pytest -q -rs",
+    "ruff check src tests migrations",
+    "ruff format --check src tests migrations",
+    "mypy src",
+    "npm ci --ignore-scripts --no-audit --no-fund",
+    "npm test",
+    "npm run check",
+    "npm run build"
+  ],
+  "environment_notes": [
+    "Tests require permission for loopback HTTP sockets and synthetic transport subprocesses.",
+    "QVE_TEST_POSTGRES_URL was unset; SQLite tests use temporary databases.",
+    "No remote CI or real archive validation is implied."
+  ]
+}

@@ -48,15 +48,57 @@ def make_revision(direction):
 @pytest.mark.parametrize(
     ("regime_name", "status", "confidence", "revision", "haircut", "expected"),
     [
-        pytest.param("Cyclical Downturn", "STABLE", 0.90, "UPWARD", 1.0, 0.40, id="downturn-upward"),
-        pytest.param("Structural Deterioration", "TRANSITION", 0.90, None, 1.0, 0.0, id="structural-transition"),
-        pytest.param("Structural Deterioration", "VOLATILE", 0.90, None, 1.0, 0.0, id="structural-volatile"),
-        pytest.param("Structural Deterioration", "STABLE", 0.39, None, 1.0, 0.0, id="structural-low-confidence"),
-        pytest.param("Structural Deterioration", "STABLE", 0.90, "DOWNWARD", 1.0, 0.0, id="structural-downward"),
-        pytest.param("Structural Deterioration", "STABLE", 0.90, "UPWARD", 1.0, 0.0, id="structural-upward"),
-        pytest.param("Structural Deterioration", "STABLE", 0.90, None, 0.88, 0.0, id="structural-tail-risk"),
-        pytest.param("Structural Deterioration", "VOLATILE", 0.20, "DOWNWARD", 0.88, 0.0, id="structural-combined"),
-        pytest.param("Mature Growth", "STABLE", 0.90, "UPWARD", 1.0, 0.85, id="mature-growth-upward"),
+        pytest.param(
+            "Cyclical Downturn", "STABLE", 0.90, "UPWARD", 1.0, 0.40, id="downturn-upward"
+        ),
+        pytest.param(
+            "Structural Deterioration",
+            "TRANSITION",
+            0.90,
+            None,
+            1.0,
+            0.0,
+            id="structural-transition",
+        ),
+        pytest.param(
+            "Structural Deterioration", "VOLATILE", 0.90, None, 1.0, 0.0, id="structural-volatile"
+        ),
+        pytest.param(
+            "Structural Deterioration",
+            "STABLE",
+            0.39,
+            None,
+            1.0,
+            0.0,
+            id="structural-low-confidence",
+        ),
+        pytest.param(
+            "Structural Deterioration",
+            "STABLE",
+            0.90,
+            "DOWNWARD",
+            1.0,
+            0.0,
+            id="structural-downward",
+        ),
+        pytest.param(
+            "Structural Deterioration", "STABLE", 0.90, "UPWARD", 1.0, 0.0, id="structural-upward"
+        ),
+        pytest.param(
+            "Structural Deterioration", "STABLE", 0.90, None, 0.88, 0.0, id="structural-tail-risk"
+        ),
+        pytest.param(
+            "Structural Deterioration",
+            "VOLATILE",
+            0.20,
+            "DOWNWARD",
+            0.88,
+            0.0,
+            id="structural-combined",
+        ),
+        pytest.param(
+            "Mature Growth", "STABLE", 0.90, "UPWARD", 1.0, 0.85, id="mature-growth-upward"
+        ),
     ],
 )
 def test_regime_caps_remain_hard_after_late_adjustments(
@@ -72,11 +114,14 @@ def test_regime_caps_remain_hard_after_late_adjustments(
     assert result.equity_weight <= SignalFusionEngine.REGIME_WEIGHT_CAPS[regime_name]
     assert result.cash_weight == round(1.0 - expected, 2)
     assert result.equity_weight + result.cash_weight == pytest.approx(1.0)
-    assert result.action == {
-        0.0: "CAPITAL_PRESERVATION",
-        0.40: "CORE_ONLY",
-        0.85: "OVERWEIGHT",
-    }[expected]
+    assert (
+        result.action
+        == {
+            0.0: "CAPITAL_PRESERVATION",
+            0.40: "CORE_ONLY",
+            0.85: "OVERWEIGHT",
+        }[expected]
+    )
 
 
 @pytest.mark.parametrize(

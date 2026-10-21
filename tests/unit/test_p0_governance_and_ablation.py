@@ -3,18 +3,12 @@ Unit test suite verifying P0 Governance, Dual-Track Valuation Contract,
 Audited Walk-Forward Accounting, 4-Way Ablation Controls, and Signal Fusion.
 """
 
-import math
-from pathlib import Path
 import pytest
 
-from valuation_engine.valuation.bridge import ValuationBridgeV2, ValuationBridgeResult
 from valuation_engine.backtest.walk_forward import (
     BacktestConfig,
-    BuyAndHoldPolicy,
     FixedAllocationPolicy,
-    NaiveDCFPolicy,
     ValuationBridgeAlphaPolicy,
-    ValuationGrowthOverlayPolicy,
     WalkForwardBacktester,
 )
 from valuation_engine.decision.signal_fusion import (
@@ -22,6 +16,7 @@ from valuation_engine.decision.signal_fusion import (
     RegimeInput,
     SignalFusionEngine,
 )
+from valuation_engine.valuation.bridge import ValuationBridgeResult, ValuationBridgeV2
 
 
 def test_quant_baseline_purity():
@@ -29,7 +24,7 @@ def test_quant_baseline_purity():
     bridge = ValuationBridgeV2()
     market_price = 100.0
     quant_dcf = 120.0
-    
+
     # Run with empty features
     res_empty = bridge.evaluate(
         quarter="FY2024-Q1",
@@ -50,7 +45,9 @@ def test_quant_baseline_purity():
         market_price=market_price,
         quant_dcf_base=quant_dcf,
         features={"demand_momentum": (1.0, 1.0), "product_cycle_strength": (1.0, 1.0)},
-        challenges=[{"kind": "upside", "target_variable": "fcf", "direction": "up", "description": "huge"}],
+        challenges=[
+            {"kind": "upside", "target_variable": "fcf", "direction": "up", "description": "huge"}
+        ],
     )
     # Quant baseline MUST remain exactly identical
     assert res_bull.quant_dcf_base == 120.0
@@ -77,7 +74,7 @@ def test_double_counting_guard():
     score_with_guidance, _, adj_with = bridge.compute_composite_score(
         features, guidance_revenue_revision=0.15, return_adjustments=True
     )
-    
+
     assert "guidance_revenue_revision" in adj_with
     assert adj_with["growth_feature_dampener"] == pytest.approx(0.85, abs=1e-4)
     # Composite score with guard must be lower than without guard to prevent double-counting
@@ -86,7 +83,9 @@ def test_double_counting_guard():
 
 def test_overnight_accounting_and_turnover_continuity(monkeypatch):
     """Verify that overnight price moves on existing holdings are correctly realized at rebalance Open."""
-    backtester = WalkForwardBacktester(config=BacktestConfig(initial_capital=100_000.0, transaction_cost_bps=10.0))
+    backtester = WalkForwardBacktester(
+        config=BacktestConfig(initial_capital=100_000.0, transaction_cost_bps=10.0)
+    )
 
     # Synthetic 2-period manifest
     manifest_data = {
@@ -114,16 +113,48 @@ def test_overnight_accounting_and_turnover_continuity(monkeypatch):
 
     # Synthetic price bars with overnight gap between 2023-01-04 close ($110) and 2023-01-05 open ($115)
     mock_bars = [
-        {"date": "2023-01-03", "open": 100.0, "high": 105.0, "low": 99.0, "close": 105.0, "adjusted_close": 105.0, "volume": 1000},
-        {"date": "2023-01-04", "open": 105.0, "high": 110.0, "low": 104.0, "close": 110.0, "adjusted_close": 110.0, "volume": 1000},
-        {"date": "2023-01-05", "open": 115.0, "high": 116.0, "low": 112.0, "close": 112.0, "adjusted_close": 112.0, "volume": 1000},
-        {"date": "2023-01-06", "open": 112.0, "high": 114.0, "low": 111.0, "close": 114.0, "adjusted_close": 114.0, "volume": 1000},
+        {
+            "date": "2023-01-03",
+            "open": 100.0,
+            "high": 105.0,
+            "low": 99.0,
+            "close": 105.0,
+            "adjusted_close": 105.0,
+            "volume": 1000,
+        },
+        {
+            "date": "2023-01-04",
+            "open": 105.0,
+            "high": 110.0,
+            "low": 104.0,
+            "close": 110.0,
+            "adjusted_close": 110.0,
+            "volume": 1000,
+        },
+        {
+            "date": "2023-01-05",
+            "open": 115.0,
+            "high": 116.0,
+            "low": 112.0,
+            "close": 112.0,
+            "adjusted_close": 112.0,
+            "volume": 1000,
+        },
+        {
+            "date": "2023-01-06",
+            "open": 112.0,
+            "high": 114.0,
+            "low": 111.0,
+            "close": 114.0,
+            "adjusted_close": 114.0,
+            "volume": 1000,
+        },
     ]
     monkeypatch.setattr(backtester, "load_daily_prices", lambda **kwargs: mock_bars)
 
     report = backtester.run(manifest_data, policy=ValuationBridgeAlphaPolicy())
     assert len(report.period_results) == 2
-    
+
     # Check that day 3 (rebalance day) pre-trade valuation captured the overnight gap to $115
     day2_nav = report.daily_equity_curve[1]["strategy_nav"]
     day3_nav = report.daily_equity_curve[2]["strategy_nav"]
@@ -133,7 +164,9 @@ def test_overnight_accounting_and_turnover_continuity(monkeypatch):
     daily_rf = 1.04 ** (1.0 / 252.0) - 1.0
     expected_cash_after_exit = 999.0 * 115.0 * (1.0 - 0.001)
     assert day3_nav == pytest.approx(expected_cash_after_exit * (1.0 + daily_rf), abs=0.01)
-    assert report.final_nav == pytest.approx(expected_cash_after_exit * (1.0 + daily_rf) ** 2, abs=0.01)
+    assert report.final_nav == pytest.approx(
+        expected_cash_after_exit * (1.0 + daily_rf) ** 2, abs=0.01
+    )
     assert report.period_results[0]["transaction_fee_paid"] == 100.0
     assert report.period_results[1]["transaction_fee_paid"] == 114.89
 

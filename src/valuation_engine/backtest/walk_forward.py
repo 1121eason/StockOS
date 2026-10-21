@@ -6,15 +6,14 @@ and 4-way ablation controls against Naive DCF, Fixed 40/60 Allocation, Passive B
 and Risk-Free Cash benchmarks.
 """
 
+import math
+import sqlite3
 from dataclasses import asdict, dataclass, field
 from datetime import date, datetime, time, timedelta
-import math
 from pathlib import Path
-import sqlite3
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from valuation_engine.time import ET, aware, calculate_next_tradable_timestamp, sessions
-
 
 TIMING_VERSION = "nasdaq_next_regular_open_v2"
 DIAGNOSTIC_LIMITATIONS = (
@@ -46,7 +45,7 @@ class SignalDecision:
     expectations_gap: float
     valuation_stance: str
     rationale: str
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -101,9 +100,9 @@ class BacktestReport:
     benchmark_max_drawdown: float
     alpha: float
     beta: float
-    period_results: List[Dict[str, Any]]
-    daily_equity_curve: List[Dict[str, Any]]
-    ablation_attribution: Dict[str, Any] = field(default_factory=dict)
+    period_results: list[dict[str, Any]]
+    daily_equity_curve: list[dict[str, Any]]
+    ablation_attribution: dict[str, Any] = field(default_factory=dict)
     classification: str = field(default="reconstruction_diagnostic", init=False)
     historical_oos: bool = field(default=False, init=False)
     timing_version: str = field(default=TIMING_VERSION, init=False)
@@ -159,7 +158,9 @@ def _signal_timing(quarter: str, info: dict[str, Any]) -> _SignalTiming:
     if "signal_available_at" in info:
         raw = info["signal_available_at"]
         if not isinstance(raw, str) or "T" not in raw:
-            raise ValueError(f"{quarter}.signal_available_at must be a timezone-aware ISO timestamp")
+            raise ValueError(
+                f"{quarter}.signal_available_at must be a timezone-aware ISO timestamp"
+            )
         try:
             available_at = aware(datetime.fromisoformat(raw)).astimezone(ET)
         except (ValueError, OverflowError) as exc:
@@ -199,17 +200,23 @@ def _validated_bar_indices(daily_bars: list[dict[str, Any]]) -> dict[str, int]:
         if previous_date is not None and bar_date <= previous_date:
             raise ValueError("Daily price bars must have unique, strictly increasing dates")
         for price_name in ("open", "close"):
-            if not isinstance(bar.get(price_name), (int, float)) or isinstance(bar.get(price_name), bool):
+            if not isinstance(bar.get(price_name), (int, float)) or isinstance(
+                bar.get(price_name), bool
+            ):
                 raise ValueError(f"bar[{index}].{price_name} must be a finite positive price")
             try:
                 price = float(bar[price_name])
             except (KeyError, TypeError, ValueError, OverflowError) as exc:
-                raise ValueError(f"bar[{index}].{price_name} must be a finite positive price") from exc
+                raise ValueError(
+                    f"bar[{index}].{price_name} must be a finite positive price"
+                ) from exc
             if not math.isfinite(price) or price <= 0:
                 raise ValueError(f"bar[{index}].{price_name} must be a finite positive price")
         date_to_idx[bar_date.isoformat()] = index
         previous_date = bar_date
-    valid_sessions = set(sessions(daily_bars[0]["date"], daily_bars[-1]["date"]).index.strftime("%Y-%m-%d"))
+    valid_sessions = set(
+        sessions(daily_bars[0]["date"], daily_bars[-1]["date"]).index.strftime("%Y-%m-%d")
+    )
     for date_label in date_to_idx:
         if date_label not in valid_sessions:
             raise ValueError(f"Daily price bar {date_label} is not a NASDAQ regular session")
@@ -222,7 +229,7 @@ class ValuationBridgeAlphaPolicy:
     Maps expectations gap and tail risk challenges to dynamic equity weights.
     """
 
-    def decide(self, quarter_info: Dict[str, Any]) -> SignalDecision:
+    def decide(self, quarter_info: dict[str, Any]) -> SignalDecision:
         quarter = quarter_info.get("quarter", "")
         as_of_date = quarter_info.get("as_of_date", "")
         gap = float(quarter_info.get("expectations_gap", 0.0))
@@ -236,7 +243,7 @@ class ValuationBridgeAlphaPolicy:
             equity_weight = 1.0
             cash_weight = 0.0
             rationale = (
-                f"預期差正向顯著 (+{gap*100:.1f}%)，內在價值高於市場定價，"
+                f"預期差正向顯著 (+{gap * 100:.1f}%)，內在價值高於市場定價，"
                 f"安全邊際充裕，配置 100% 股票倉位。"
             )
 
@@ -247,14 +254,14 @@ class ValuationBridgeAlphaPolicy:
                 equity_weight = 0.70
                 cash_weight = 0.30
                 rationale = (
-                    f"預期差處於合理區間 ({gap*100:.1f}%)，但面臨 {downsides} 項下行模型質疑，"
+                    f"預期差處於合理區間 ({gap * 100:.1f}%)，但面臨 {downsides} 項下行模型質疑，"
                     f"維持 70% 股票持倉，配置 30% 現金防禦緩衝。"
                 )
             else:
                 equity_weight = 1.0
                 cash_weight = 0.0
                 rationale = (
-                    f"預期差處於合理區間 ({gap*100:.1f}%)，且尾部挑戰受控 ({downsides} 項)，"
+                    f"預期差處於合理區間 ({gap * 100:.1f}%)，且尾部挑戰受控 ({downsides} 項)，"
                     f"基本面與現金流相稱，配置 100% 股票倉位。"
                 )
 
@@ -264,7 +271,7 @@ class ValuationBridgeAlphaPolicy:
             equity_weight = 0.35
             cash_weight = 0.65
             rationale = (
-                f"市場定價透支現金流 (預期差 {gap*100:.1f}%)，估值處於高位，"
+                f"市場定價透支現金流 (預期差 {gap * 100:.1f}%)，估值處於高位，"
                 f"調降股票部位至 35%，保留 65% 現金獲利了結以規避回撤。"
             )
 
@@ -274,7 +281,7 @@ class ValuationBridgeAlphaPolicy:
             equity_weight = 0.0
             cash_weight = 1.0
             rationale = (
-                f"極端投機溢價 (預期差 {gap*100:.1f}% < -30%)，脫離當期基本面現金流，"
+                f"極端投機溢價 (預期差 {gap * 100:.1f}% < -30%)，脫離當期基本面現金流，"
                 f"啟動資本保護機制，股票持倉降至 0%，轉入 100% 現金避險。"
             )
 
@@ -303,7 +310,7 @@ class ValuationGrowthOverlayPolicy:
     and dynamically scales up to 100% long as Valuation Bridge margin of safety increases.
     """
 
-    def decide(self, quarter_info: Dict[str, Any]) -> SignalDecision:
+    def decide(self, quarter_info: dict[str, Any]) -> SignalDecision:
         quarter = quarter_info.get("quarter", "")
         as_of_date = quarter_info.get("as_of_date", "")
         gap = float(quarter_info.get("expectations_gap", 0.0))
@@ -313,22 +320,22 @@ class ValuationGrowthOverlayPolicy:
             action = "STRONG_ACCUMULATE"
             equity_weight = 1.0
             cash_weight = 0.0
-            rationale = f"預期差正向 (+{gap*100:.1f}%)，全額加碼至 100% 股票倉位。"
+            rationale = f"預期差正向 (+{gap * 100:.1f}%)，全額加碼至 100% 股票倉位。"
         elif gap >= -0.15:
             action = "OVERWEIGHT"
             equity_weight = 0.85
             cash_weight = 0.15
-            rationale = f"合理估值區間 ({gap*100:.1f}%)，配置 85% 核心倉位，保留 15% 現金防禦。"
+            rationale = f"合理估值區間 ({gap * 100:.1f}%)，配置 85% 核心倉位，保留 15% 現金防禦。"
         elif gap >= -0.30:
             action = "NEUTRAL_TILT"
             equity_weight = 0.60
             cash_weight = 0.40
-            rationale = f"估值適度偏高 ({gap*100:.1f}%)，降低倉位至 60%，配置 40% 現金緩衝。"
+            rationale = f"估值適度偏高 ({gap * 100:.1f}%)，降低倉位至 60%，配置 40% 現金緩衝。"
         else:
             action = "CORE_ONLY"
             equity_weight = 0.40
             cash_weight = 0.60
-            rationale = f"估值透支溢價 ({gap*100:.1f}%)，維持 40% 核心底倉，其餘 60% 現金避險。"
+            rationale = f"估值透支溢價 ({gap * 100:.1f}%)，維持 40% 核心底倉，其餘 60% 現金避險。"
 
         return SignalDecision(
             quarter=quarter,
@@ -356,7 +363,7 @@ class FixedAllocationPolicy:
     def __init__(self, target_equity_weight: float = 0.40):
         self.target_equity_weight = target_equity_weight
 
-    def decide(self, quarter_info: Dict[str, Any]) -> SignalDecision:
+    def decide(self, quarter_info: dict[str, Any]) -> SignalDecision:
         return SignalDecision(
             quarter=quarter_info.get("quarter", ""),
             as_of_date=quarter_info.get("as_of_date", ""),
@@ -366,7 +373,7 @@ class FixedAllocationPolicy:
             cash_weight=1.0 - self.target_equity_weight,
             expectations_gap=0.0,
             valuation_stance="FIXED_BASELINE",
-            rationale=f"消融基準對照組：固定配置 {self.target_equity_weight*100:.0f}% 股票，{(1.0-self.target_equity_weight)*100:.0f}% 現金。",
+            rationale=f"消融基準對照組：固定配置 {self.target_equity_weight * 100:.0f}% 股票，{(1.0 - self.target_equity_weight) * 100:.0f}% 現金。",
         )
 
 
@@ -375,7 +382,7 @@ class NaiveDCFPolicy:
     Baseline policy driven purely by quant DCF without AI qualitative features.
     """
 
-    def decide(self, quarter_info: Dict[str, Any]) -> SignalDecision:
+    def decide(self, quarter_info: dict[str, Any]) -> SignalDecision:
         quarter = quarter_info.get("quarter", "")
         as_of_date = quarter_info.get("as_of_date", "")
         market_price = float(quarter_info.get("market_price", 1.0))
@@ -402,14 +409,14 @@ class NaiveDCFPolicy:
             cash_weight=1.0 - equity_weight,
             expectations_gap=naive_gap,
             valuation_stance="NAIVE_DCF",
-            rationale=f"純量化 DCF 預期差 {naive_gap*100:.1f}%，配置權重 {equity_weight*100:.0f}%。",
+            rationale=f"純量化 DCF 預期差 {naive_gap * 100:.1f}%，配置權重 {equity_weight * 100:.0f}%。",
         )
 
 
 class BuyAndHoldPolicy:
     """Passive Benchmark: 100% Long NVDA"""
 
-    def decide(self, quarter_info: Dict[str, Any]) -> SignalDecision:
+    def decide(self, quarter_info: dict[str, Any]) -> SignalDecision:
         return SignalDecision(
             quarter=quarter_info.get("quarter", ""),
             as_of_date=quarter_info.get("as_of_date", ""),
@@ -432,8 +439,8 @@ class WalkForwardBacktester:
 
     def __init__(
         self,
-        config: Optional[BacktestConfig] = None,
-        db_path: Optional[Path] = None,
+        config: BacktestConfig | None = None,
+        db_path: Path | None = None,
     ):
         self.config = config or BacktestConfig()
         root = Path(__file__).resolve().parent.parent.parent.parent
@@ -441,7 +448,7 @@ class WalkForwardBacktester:
 
     def load_daily_prices(
         self, start_date: str = "2022-08-25", end_date: str = "2026-09-11"
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Loads daily split-adjusted price bars from qve.db in read-only mode."""
         if not self.db_path.exists():
             raise FileNotFoundError(f"Database not found: {self.db_path}")
@@ -458,25 +465,28 @@ class WalkForwardBacktester:
                 ORDER BY timestamp ASC
             """
             rows = conn.execute(
-                query, (self.config.benchmark_ticker, f"{start_date} 00:00:00", f"{end_date} 23:59:59")
+                query,
+                (self.config.benchmark_ticker, f"{start_date} 00:00:00", f"{end_date} 23:59:59"),
             ).fetchall()
 
         bars = []
         for r in rows:
-            bars.append({
-                "date": r["trade_date"],
-                "open": float(r["open"]),
-                "high": float(r["high"]),
-                "low": float(r["low"]),
-                "close": float(r["close"]),
-                "adj_close": float(r["adjusted_close"]),
-                "volume": int(r["volume"] or 0),
-            })
+            bars.append(
+                {
+                    "date": r["trade_date"],
+                    "open": float(r["open"]),
+                    "high": float(r["high"]),
+                    "low": float(r["low"]),
+                    "close": float(r["close"]),
+                    "adj_close": float(r["adjusted_close"]),
+                    "volume": int(r["volume"] or 0),
+                }
+            )
         return bars
 
     def run(
         self,
-        manifest_data: Dict[str, Any],
+        manifest_data: dict[str, Any],
         policy: Any,
         strategy_name: str = "ValuationBridgeAlphaPolicy",
     ) -> BacktestReport:
@@ -512,11 +522,13 @@ class WalkForwardBacktester:
                 raise ValueError(
                     f"Missing first eligible NASDAQ session bar {execution_date} for {timing.quarter}"
                 )
-            rebalance_schedule.append({
-                "quarter": timing.quarter,
-                "info": timing.info,
-                "exec_bar_idx": date_to_idx[execution_date],
-            })
+            rebalance_schedule.append(
+                {
+                    "quarter": timing.quarter,
+                    "info": timing.info,
+                    "exec_bar_idx": date_to_idx[execution_date],
+                }
+            )
 
         # All strategies and benchmarks begin at the first eligible open. Earlier bars
         # neither earn a strategy return nor create a fictitious pre-signal quarter.
@@ -538,8 +550,8 @@ class WalkForwardBacktester:
 
         daily_rf = (1.0 + self.config.annual_risk_free_rate) ** (1.0 / 252.0) - 1.0
 
-        daily_curve: List[DailyNavPoint] = []
-        period_results: List[PeriodResult] = []
+        daily_curve: list[DailyNavPoint] = []
+        period_results: list[PeriodResult] = []
 
         strategy_peak = nav
         benchmark_peak = benchmark_nav
@@ -569,8 +581,12 @@ class WalkForwardBacktester:
                 # If wrapping up a previous period, record PeriodResult
                 if b_idx > 0:
                     prev_bar = daily_bars[b_idx - 1]
-                    period_stock_ret = (prev_bar["close"] - current_period_entry_price) / current_period_entry_price
-                    period_strat_ret = (nav - period_start_nav) / period_start_nav if period_start_nav > 0 else 0.0
+                    period_stock_ret = (
+                        prev_bar["close"] - current_period_entry_price
+                    ) / current_period_entry_price
+                    period_strat_ret = (
+                        (nav - period_start_nav) / period_start_nav if period_start_nav > 0 else 0.0
+                    )
                     period_results.append(
                         PeriodResult(
                             period_index=current_period_idx,
@@ -626,8 +642,8 @@ class WalkForwardBacktester:
                 current_equity_weight = target_equity_w
 
             # Daily cash interest accrual
-            cash_held *= (1.0 + daily_rf)
-            cash_nav *= (1.0 + daily_rf)
+            cash_held *= 1.0 + daily_rf
+            cash_nav *= 1.0 + daily_rf
 
             # End of day valuation at Close
             equity_val = shares_held * bar_close
@@ -643,7 +659,9 @@ class WalkForwardBacktester:
 
             if benchmark_nav > benchmark_peak:
                 benchmark_peak = benchmark_nav
-            bench_dd = (benchmark_nav - benchmark_peak) / benchmark_peak if benchmark_peak > 0 else 0.0
+            bench_dd = (
+                (benchmark_nav - benchmark_peak) / benchmark_peak if benchmark_peak > 0 else 0.0
+            )
 
             daily_curve.append(
                 DailyNavPoint(
@@ -660,8 +678,12 @@ class WalkForwardBacktester:
 
         # Record the final period
         last_bar = daily_bars[-1]
-        period_stock_ret = (last_bar["close"] - current_period_entry_price) / current_period_entry_price
-        period_strat_ret = (nav - period_start_nav) / period_start_nav if period_start_nav > 0 else 0.0
+        period_stock_ret = (
+            last_bar["close"] - current_period_entry_price
+        ) / current_period_entry_price
+        period_strat_ret = (
+            (nav - period_start_nav) / period_start_nav if period_start_nav > 0 else 0.0
+        )
         period_results.append(
             PeriodResult(
                 period_index=current_period_idx,
@@ -691,20 +713,30 @@ class WalkForwardBacktester:
         cum_return = (nav - self.config.initial_capital) / self.config.initial_capital
         cagr = ((nav / self.config.initial_capital) ** (1.0 / years) - 1.0) if years > 0 else 0.0
 
-        bench_cum_return = (benchmark_nav - self.config.initial_capital) / self.config.initial_capital
-        bench_cagr = ((benchmark_nav / self.config.initial_capital) ** (1.0 / years) - 1.0) if years > 0 else 0.0
+        bench_cum_return = (
+            benchmark_nav - self.config.initial_capital
+        ) / self.config.initial_capital
+        bench_cagr = (
+            ((benchmark_nav / self.config.initial_capital) ** (1.0 / years) - 1.0)
+            if years > 0
+            else 0.0
+        )
 
         # Daily returns
         strat_returns = []
         bench_returns = []
         for i in range(1, len(daily_curve)):
-            s_ret = (daily_curve[i].strategy_nav - daily_curve[i - 1].strategy_nav) / daily_curve[i - 1].strategy_nav
-            b_ret = (daily_curve[i].benchmark_nav - daily_curve[i - 1].benchmark_nav) / daily_curve[i - 1].benchmark_nav
+            s_ret = (daily_curve[i].strategy_nav - daily_curve[i - 1].strategy_nav) / daily_curve[
+                i - 1
+            ].strategy_nav
+            b_ret = (daily_curve[i].benchmark_nav - daily_curve[i - 1].benchmark_nav) / daily_curve[
+                i - 1
+            ].benchmark_nav
             strat_returns.append(s_ret)
             bench_returns.append(b_ret)
 
         # Volatility & Sharpe
-        def calc_vol(rets: List[float]) -> float:
+        def calc_vol(rets: list[float]) -> float:
             if len(rets) < 2:
                 return 0.0
             mean = sum(rets) / len(rets)
@@ -715,7 +747,9 @@ class WalkForwardBacktester:
         bench_vol = calc_vol(bench_returns)
 
         sharpe = (cagr - self.config.annual_risk_free_rate) / strat_vol if strat_vol > 0 else 0.0
-        bench_sharpe = (bench_cagr - self.config.annual_risk_free_rate) / bench_vol if bench_vol > 0 else 0.0
+        bench_sharpe = (
+            (bench_cagr - self.config.annual_risk_free_rate) / bench_vol if bench_vol > 0 else 0.0
+        )
 
         max_dd = min(pt.strategy_drawdown for pt in daily_curve) if daily_curve else 0.0
         bench_max_dd = min(pt.benchmark_drawdown for pt in daily_curve) if daily_curve else 0.0
@@ -729,12 +763,16 @@ class WalkForwardBacktester:
         # Beta & Alpha
         if len(strat_returns) > 1 and bench_vol > 0:
             cov = sum(
-                (s - (sum(strat_returns) / len(strat_returns))) * (b - (sum(bench_returns) / len(bench_returns)))
-                for s, b in zip(strat_returns, bench_returns)
+                (s - (sum(strat_returns) / len(strat_returns)))
+                * (b - (sum(bench_returns) / len(bench_returns)))
+                for s, b in zip(strat_returns, bench_returns, strict=False)
             ) / (len(strat_returns) - 1)
             bench_var = (bench_vol / math.sqrt(252.0)) ** 2
             beta = cov / bench_var if bench_var > 0 else 1.0
-            alpha = cagr - (self.config.annual_risk_free_rate + beta * (bench_cagr - self.config.annual_risk_free_rate))
+            alpha = cagr - (
+                self.config.annual_risk_free_rate
+                + beta * (bench_cagr - self.config.annual_risk_free_rate)
+            )
         else:
             beta = 1.0
             alpha = 0.0
