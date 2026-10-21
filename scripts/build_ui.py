@@ -8,7 +8,7 @@ from html.parser import HTMLParser
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-ASSETS = ("index.html", "styles.css", "app.js", "domain.mjs", "favicon.svg", "research.html", "research.js")
+ASSETS = ("index.html", "styles.css", "app.js", "domain.mjs", "favicon.svg", "research.html", "research.js", "nvda.html", "nvda.js", "nvda.css")
 
 
 class AssetParser(HTMLParser):

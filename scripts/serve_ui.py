@@ -28,6 +28,9 @@ ASSETS = {
     "/domain.mjs": "domain.mjs",
     "/styles.css": "styles.css",
     "/favicon.svg": "favicon.svg",
+    "/nvda": "nvda.html",
+    "/nvda.js": "nvda.js",
+    "/nvda.css": "nvda.css",
 }
 FIELDS = {
     "wacc": (Decimal("0.1"), Decimal(50)),
@@ -111,6 +114,7 @@ def workspace(company_id: str) -> dict[str, Any]:
 
 class ResearchHTTPServer(ThreadingHTTPServer):
     research_store: Path | None = None
+    workbench: Any = None
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -154,11 +158,24 @@ class Handler(BaseHTTPRequestHandler):
             return
         url = urlsplit(self.path)
         if url.path in ASSETS:
-            path = ROOT / "ui" / ASSETS[url.path]
+            asset = "nvda.html" if url.path == "/" and getattr(self.server, "workbench", None) else ASSETS[url.path]
+            path = ROOT / "ui" / asset
             mime = mimetypes.guess_type(path)[0] or "text/javascript"
             if path.suffix == ".mjs":
                 mime = "text/javascript"
             self.send(200, path.read_bytes(), mime + "; charset=utf-8")
+        elif url.path == "/api/nvda":
+            workbench = getattr(self.server, "workbench", None)
+            if workbench is None:
+                self.json(200, {"configured": False, "research": None,
+                                "message": "尚未設定 NVDA 研究來源；不會替代為示範資料。"})
+            else:
+                try:
+                    self.json(200, {"configured": True, **workbench.load()})
+                except (ValueError, OSError, KeyError):
+                    self.json(200, {"configured": True, "research": None,
+                                    "last_attempt": workbench.last_attempt,
+                                    "message": "尚無可讀取的研究快照，請按更新研究與股價。"})
         elif url.path in ("/api/research/runs", "/api/research/run"):
             from valuation_engine.research.workspace import list_runs, load_run
 
@@ -174,7 +191,8 @@ class Handler(BaseHTTPRequestHandler):
             except (ValueError, OSError):
                 self.json(422, {"error": "研究儲存區無法讀取或結果不存在"})
         elif url.path == "/api/health":
-            self.json(200, {"status": "ok", "mode": "demo", "database_connected": False,
+            configured = getattr(self.server, "workbench", None) is not None
+            self.json(200, {"status": "ok", "mode": "nvda" if configured else "demo", "database_connected": configured,
                             "provider_calls": False, "backend_baseline": "0c9d858da7eb92e2387cb918bbbe5968ad2a1a54"})
         elif url.path == "/api/workspace":
             try:
@@ -192,6 +210,21 @@ class Handler(BaseHTTPRequestHandler):
         if origin and origin not in (f"http://127.0.0.1:{self.port()}",
                                      f"http://localhost:{self.port()}"):
             self.json(403, {"error": "不接受其他來源的請求"})
+            return
+        if self.path == "/api/nvda/update":
+            workbench = getattr(self.server, "workbench", None)
+            if workbench is None:
+                self.json(409, {"error": "未設定 NVDA 研究來源"})
+                return
+            try:
+                length = int(self.headers.get("Content-Length", "0"))
+                if self.headers.get_content_type() != "application/json" or not 0 < length <= 128:
+                    raise ValueError("請使用有效的 JSON 更新請求。")
+                if json.loads(self.rfile.read(length)) != {}:
+                    raise ValueError("更新請求不接受資料庫路徑、股票或模型參數。")
+                self.json(200, {"configured": True, **workbench.update()})
+            except (ValueError, OSError, KeyError, TypeError) as exc:
+                self.json(422, {"error": str(exc) if isinstance(exc, ValueError) else "研究更新失敗，保留上一份正常結果。"})
             return
         if self.path != "/api/sandbox":
             self.json(404, {"error": "找不到 API"})
@@ -217,6 +250,11 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="StockOS 本機 UI（合成示範與獨立唯讀研究）")
     parser.add_argument("--port", type=int, default=8501)
     parser.add_argument("--research-store", type=Path, help="Explicit isolated research SQLite file; read-only UI")
+    parser.add_argument("--source-db", type=Path, help="Explicit NVDA formal source; read only, never migrated")
+    parser.add_argument("--raw-dir", type=Path, help="Explicit content-hashed source directory")
+    parser.add_argument("--workbench-store", type=Path, default=ROOT / "data/nvda-workbench",
+                        help="Separate local immutable research snapshots")
+    parser.add_argument("--open-browser", action="store_true", help="Open the local page after startup")
     args = parser.parse_args()
     if not 1024 <= args.port <= 65535:
         parser.error("port 須介於 1024 與 65535")
@@ -225,7 +263,18 @@ def main() -> None:
     except OSError as exc:
         parser.exit(1, f"無法啟動：{exc}\n請改用 --port 8502，或在原終端機按 Ctrl+C。\n")
     server.research_store = args.research_store
-    print(f"StockOS 示範工作區：http://127.0.0.1:{args.port}\nCtrl+C 停止；不讀取正式資料庫、不呼叫模型。選配研究儲存區僅唯讀。", flush=True)
+    if args.source_db or args.raw_dir:
+        if not args.source_db or not args.raw_dir:
+            parser.error("--source-db 與 --raw-dir 必須一起指定")
+        from valuation_engine.research.workbench import Workbench
+
+        server.workbench = Workbench(args.source_db, args.raw_dir, args.workbench_store)
+    mode = "NVDA 研究工作台" if server.workbench else "示範工作區"
+    print(f"StockOS {mode}：http://127.0.0.1:{args.port}\nCtrl+C 停止；正式來源僅唯讀，更新只保存獨立工作台快照。不呼叫 AI 模型。", flush=True)
+    if args.open_browser:
+        import webbrowser
+
+        webbrowser.open(f"http://127.0.0.1:{args.port}/nvda" if server.workbench else f"http://127.0.0.1:{args.port}")
     try:
         server.serve_forever()
     except KeyboardInterrupt:

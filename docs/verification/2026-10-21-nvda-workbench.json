@@ -1,0 +1,68 @@
+{
+  "date": "2026-10-21",
+  "base_commit": "84bb695f9feb3c9cff560ab7d08beef69cf91507",
+  "python": {
+    "tests": 1333,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 5,
+    "passed": 1328
+  },
+  "ui": {
+    "passed": 26,
+    "failed": 0,
+    "skipped": 0
+  },
+  "checks": {
+    "ruff": "PASS",
+    "format_files": 138,
+    "mypy_source_files": 82,
+    "ui_syntax": "PASS",
+    "ui_build": "PASS",
+    "diff": "PASS"
+  },
+  "browser": {
+    "real_nvda_manual_update": "PASS",
+    "same_fiscal_year_selection": "PASS",
+    "source_and_model_traceability": "PASS",
+    "isolated_missing_source_keeps_saved_result": "PASS"
+  },
+  "source_database_write": false,
+  "frozen_financial_ai_regime_modules_changed": false,
+  "live_model_calls": 0,
+  "deployment": false,
+  "ai_preparation": {
+    "quarter": "FY2023-Q2",
+    "fresh_readonly_source_package": "PASS",
+    "planned_attempts_per_method": 22,
+    "planned_attempts_per_pair": 44,
+    "quality": "UNSCORED",
+    "runtime_and_model_identity": "PENDING",
+    "human_reviews": "PENDING"
+  },
+  "runtime_data_or_real_research_outputs_included": false,
+  "source_files_sha256": {
+    "README.md": "c3fe0e2fc834e3b6b84a9101d1e086faaa16a53ad82241f5a62df1d8ff01f3c7",
+    "UI_START_HERE.md": "9175de863b7afa6bbe080988aef7eae869aa441312348b35731f458ef927163d",
+    "docs/AI_RESEARCH_SUPPLEMENT_2026_10_21.md": "4c0fdde938d4bdfc9712c580dcf25b7b5545eee88b7417cc6f8858c37e5cf4b7",
+    "docs/NVDA_WORKBENCH.md": "09cc1ba565dca7ed8873a992206ed74f5c1a60874ffb60f028b023e4358bac32",
+    "docs/NVDA_WORKBENCH_DELIVERY_2026_10_21.md": "650cd4dc89239d790933d9122f732700849c1dccbf3fe8e833627f6412cbc326",
+    "package.json": "481a23dc651f36192d47e4c250d846fa3373e2e9cfd09c795725d3937ca73845",
+    "scripts/audit_nvda_ai_readiness.py": "8a2719522eda41379ced54e0b32ba1b379309681e60f7bfdc1eb4eaff6bd7337",
+    "scripts/build_ui.py": "b744efec081553385d46a3e8d24f47e424d7db5388e89dfe47b233ce7165fb37",
+    "scripts/serve_ui.py": "bcf33e37caf7b9344d39fb62926842f6af436de1326ce929bd9f8fc2df3f7d7e",
+    "src/valuation_engine/research/market_quote.py": "d98289268cbb8c9f68248d408fdba52c32707347ff71bf646f99234ce01ff80e",
+    "src/valuation_engine/research/workbench.py": "9f9b72e46554fb4b5d440d9d5b572d9ffba00839f9631a8879950a3c91548e07",
+    "tests/unit/test_nvda_workbench.py": "6192fab68f1001bec3cc8fa4b88f6521d397de82dedad7b91adee94a32e3b8c4",
+    "tests/unit/test_ui_workspace.py": "d40b5a9948aad8abfdd6f9374dbbe7aaaab98dbe37d6a6f49d3f3f8bbc76e913",
+    "ui/nvda.css": "955f7da4bd5e6360b6cf7979ccabc76de3c2f9bab9782f0b7a4947eaf36edd6f",
+    "ui/nvda.html": "6d3e2502618a8579fd7e157006fea5ff5ac67d38bffa252cfe337ac631fa2511",
+    "ui/nvda.js": "89ef825edc808c42cca1d6a40b9b4f7583b24efab74e1b18dc0eff8601b0c7f1",
+    "ui/nvda.test.mjs": "d9df9cfe292a7b531b75b91d1cef5f6e4af9b9ad58a2571738a3b18cc894ff8c"
+  },
+  "notes": [
+    "Five Python skips require isolated PostgreSQL, actual NVIDIA archives, or full backtest inputs.",
+    "Actual research snapshots, quote receipts, original logs and browser screenshots remain local.",
+    "No GitHub Actions workflow is configured; these are local verification results."
+  ]
+}
