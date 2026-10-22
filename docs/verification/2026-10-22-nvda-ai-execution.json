@@ -1,0 +1,117 @@
+{
+  "version": "NVDAQ2ExecutionAndReviewReadinessV1",
+  "status": "PASS_ENGINEERING_ONLY",
+  "contract_hash": "a12cd7b8acd1731b9a0110a427f3ec20dff3a40909d123994cb702008571ac2b",
+  "diagnostic_launches": 8,
+  "diagnostic_passed": 7,
+  "retained_failed_diagnostic": 1,
+  "research_launches": 44,
+  "total_launches": 52,
+  "all_owned_cleanup": "CLEAN",
+  "ledger_matches_raw_streams_and_database": true,
+  "lineage_status": "CONSISTENT",
+  "lineage_checks": 120,
+  "candidate_database_sha256": "66a3745e7432fc125577e1fbeeb767eba0f1fce59da78c22e3b12fe68090aea7",
+  "original_database_sha256": "0d1f02365dca289281212fcc7716f23197f18a09f353f08e771e7f0245369c23",
+  "formal_database_writes": 0,
+  "source_narrative_blocks": 932,
+  "actual_backend_snapshot_identity": "UNVERIFIED",
+  "historical_oos": false,
+  "human_reviews_completed": 0,
+  "quality_verdict": "UNSCORED",
+  "winner": null,
+  "promotion_ready": false,
+  "date": "2026-10-22",
+  "quarter": "FY2023-Q2",
+  "role": "research_supplement_only",
+  "requested_model": "gpt-6-astra",
+  "cli_version": "codex-cli 0.163.0-alpha.10.2",
+  "cli_sha256": "1afb28c01d7d49e892bd75f11076b10f1451e34e0ee308a95e5ab7f69f9c84fe",
+  "protocol_hash": "5aff6b73e6b83a5f159e66dce277eb4412c83d13624bfda6a3ce2dce91d44e1d",
+  "package_hash": "51164d6740f177141db77880f29b79c606651d187402bc8edc6dcf7b2f6cb885",
+  "research_by_method": {
+    "B": {
+      "calls": 22,
+      "status": "COMPLETED"
+    },
+    "C": {
+      "calls": 22,
+      "status": "COMPLETED"
+    }
+  },
+  "aggregate_candidate_outputs": {
+    "evidence_count": 1041,
+    "admitted_features_count": 48,
+    "rejections_count": 7,
+    "challenges_count": 16
+  },
+  "rejection_reasons": {
+    "evidence_span_too_long": 7
+  },
+  "initial_replay_mismatch": {
+    "checks": [
+      "run_1.receipt",
+      "run_2.receipt"
+    ],
+    "reason": "Legacy verifier accepted OFFLINE_SYNTHETIC only; original database retained, live mode now requires complete bound execution receipts."
+  },
+  "native_isolation_gates": {
+    "C1": "PASS",
+    "C2": "PASS",
+    "C3": "PASS",
+    "C4": "PASS",
+    "C5": "PASS",
+    "C6": "PASS",
+    "C7": "PASS",
+    "C8": "PASS",
+    "C9": "PASS",
+    "C10": "PASS",
+    "C11": "PASS",
+    "C12": "PASS"
+  },
+  "runtime_scope": "STOCKOS_OWNED_CHILDREN_ONLY",
+  "internal_http_reconnections": "NOT_INDEPENDENTLY_COUNTED",
+  "additional_model_calls_after_completion": 0,
+  "other_stocks_added": 0,
+  "cloud_deployed": false,
+  "human_review": {
+    "status": "PREPARED_UNSCORED",
+    "packet_hash": "4664e3639dd37b3bef66eda2b52b3891ce9ffab36bdeffec67a0ad965cad7636",
+    "completed": 0,
+    "reviewer_forms": "UNSUBMITTED",
+    "repeat_stability": "UNASSESSED_NO_REPEATS",
+    "complete_total": null,
+    "method_mapping_published": false,
+    "required_independent_blind_reviewers": 2
+  },
+  "preservation": {
+    "w1_source_files": 6,
+    "changed": 0,
+    "formal_database_unchanged": true
+  },
+  "validation": {
+    "full_suite": {
+      "tests": 1457,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 5,
+      "passed": 1452
+    },
+    "targeted_lineage_and_review_tests": 41,
+    "ruff_lint": "PASS_SRC_TESTS_SCRIPTS",
+    "ruff_format": "PASS_SRC_TESTS_AND_CHANGED_SCRIPTS",
+    "formatted_files": 147,
+    "mypy_source_files": 90,
+    "mypy": "PASS",
+    "existing_unrelated_script_format_differences": 7
+  },
+  "private_artifact_sha256": {
+    "execution-audit.json": "77fcaba8cd8ddfc3b487756699677505460cf4eaa6ab8b547c9932fe6298569f",
+    "lineage.json": "8b94d093e21d3f0d4a28f10d7f4014c7bec9451642339a01dd80bb22821c3401",
+    "lineage-investigation.json": "850381e127d2a051fb14b9f1875d8bfae35828eece051607d07cbe5ac7fdf8e0",
+    "w1-preservation-final.json": "7d2d98edfe8609f216f2ddf2fb2e532d3300635bf3f727f17d7f10a41129cb4b",
+    "human-review-v2/manifest.json": "bce39bc7518342c05f6eb122830a30eb1682bf1c924d51349875df27f7554202",
+    "pytest-main-final.xml": "8609f8729f7e71d641e5855fe7fa0972cb5e4235b477df7e833ad84ff11488fe"
+  },
+  "runtime_data_included": false
+}

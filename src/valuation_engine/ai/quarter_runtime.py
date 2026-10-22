@@ -24,8 +24,10 @@ from valuation_engine.ai.provider import strict_schema
 CLI_VERSION = "codex-cli 0.163.0-alpha.10.2"
 CLI_SHA = "1afb28c01d7d49e892bd75f11076b10f1451e34e0ee308a95e5ab7f69f9c84fe"
 CONFIG_V2 = copy.deepcopy(CONFIG)
+LEGACY_CONTRACT_HASH = "dcc0d45a1a9b49141fd916bf94371a11fa1e0e60c9541a69fb89abab0ff9ffb9"
+RECOVERY_LEDGER_SHA = "5afcc118fc3dc0111a067921a793f5fc02e90affe43967e5cd374183ee1302ed"
 CONTRACT = {
-    "version": "NVDASingleQuarterExecutionV2",
+    "version": "NVDASingleQuarterExecutionV2.1",
     "quarter": "FY2023-Q2",
     "protocol_hash": PROTOCOL_HASH,
     "package_hash": PACKAGE_HASH,
@@ -36,10 +38,17 @@ CONTRACT = {
     "exclusion_scope": "ONE_STOCKOS_CONTROLLED_PROVIDER_REQUEST_ACROSS_SHARED_STATE_ROOT",
     "host_baseline": "RECORDED_WITHOUT_TERMINATING_OR_CERTIFYING_UNRELATED_PROCESSES",
     "model_identity": "REQUESTED_AND_CLI_REPORTED_ONLY_UNLESS_BACKEND_EXPOSES_IDENTITY",
-    "diagnostic_attempt_cap": 7,
+    "diagnostic_attempt_cap": 8,
     "research_attempt_cap": 44,
     "attempts_per_method": 22,
-    "total_attempt_cap": 51,
+    "total_attempt_cap": 52,
+    "recovery": {
+        "prior_contract_hash": LEGACY_CONTRACT_HASH,
+        "retained_failed_attempt_sha256": RECOVERY_LEDGER_SHA,
+        "additional_attempts": 1,
+        "requires_separate_bound_user_approval": True,
+        "startup_notice_policy": "EXACT_PINNED_PRE_TURN_NOTICES_ONLY",
+    },
     "outer_retries": 0,
     "attempt_accounting": "CLI_INVOCATIONS_NOT_INDEPENDENT_HTTP_REQUEST_COUNTS",
     "provider_internal_retries": "NOT_INDEPENDENTLY_MEASURED_BUILTIN_OPENAI_PROVIDER",
@@ -48,6 +57,18 @@ CONTRACT = {
     "formal_db_writes": False,
 }
 CONTRACT_HASH = sha(canonical(CONTRACT).encode())
+
+# This pinned CLI emits nonfatal startup notices as item.type=error. Only these
+# exact pre-turn notices are admissible; tools, errors after turn.start and all
+# unknown messages retain the original fail-closed behavior.
+STARTUP_NOTICES = frozenset(
+    {
+        "Under-development features enabled: skip_host_skill_discovery. Under-development features are incomplete and may behave unpredictably. To suppress this warning, set `suppress_unstable_features_warning = true` in "
+        + str(Path.home() / ".codex/config.toml")
+        + ".",
+        "Code Mode is unavailable because code-mode host is disabled. Code mode will fail closed; enable `features.code_mode_host` and install `codex-code-mode-host`.",
+    }
+)
 
 
 def now():
@@ -100,6 +121,61 @@ def write_json(path: Path, value, *, exclusive=False):
         raise
 
 
+def approved_failure(state_root: Path, approval: dict) -> Path | None:
+    """Admit only the one retained startup failure explicitly approved by the user.
+
+    This is not a retry policy. All bytes stay bound to the original journal,
+    response and raw streams; any subsequent failure still stops the run.
+    """
+    recovery = approval.get("recovery")
+    if recovery is None:
+        return None
+    path = state_root / "attempt-0001.json"
+    if (
+        approval.get("contract_hash") != CONTRACT_HASH
+        or approval.get("decision") != "APPROVED_BY_USER"
+        or approval.get("shared_state_root") != str(state_root.resolve())
+        or not recovery.get("user_instruction")
+        or recovery.get("additional_diagnostic_attempts") != 1
+        or recovery.get("ledger_sha256") != RECOVERY_LEDGER_SHA
+        or path.is_symlink()
+        or sha(path.read_bytes()) != RECOVERY_LEDGER_SHA
+    ):
+        raise ValueError("Recovery approval or retained failed journal changed")
+    record = json.loads(path.read_bytes())
+    if any(
+        record.get(k) != v
+        for k, v in {
+            "contract_hash": LEGACY_CONTRACT_HASH,
+            "index": 1,
+            "phase": "diagnostic",
+            "stage": "isolation_1",
+            "method": None,
+            "status": "FAILED",
+            "cleanup": "CLEAN",
+        }.items()
+    ):
+        raise ValueError("Only the original clean startup failure is recoverable")
+    result_path = Path(recovery["result_path"])
+    if result_path.is_symlink() or result_path.parent.is_symlink():
+        raise ValueError("Symlink recovery evidence refused")
+    result = json.loads(result_path.read_bytes())
+    if (
+        sha(canonical(result).encode()) != record.get("result_sha256")
+        or result.get("failure") != "ValueError"
+        or result.get("group_absent") is not True
+        or result.get("remaining_observed_descendants") != []
+        or result.get("structured_output") is not None
+        or result.get("turn_completed") is not False
+    ):
+        raise ValueError("Original failure result binding changed")
+    for name in ("stdout.jsonl", "stderr.txt"):
+        stream = result_path.parent / name
+        if stream.is_symlink() or sha(stream.read_bytes()) != result.get(name + "_sha256"):
+            raise ValueError("Original failure raw stream changed")
+    return path
+
+
 class Execution:
     """One explicit approval, one fixed shared lock, non-resetting call journal."""
 
@@ -112,6 +188,7 @@ class Execution:
         ):
             raise ValueError("V2 scope and diagnostic budget require a bound user decision")
         self.root, self.output, self.exe = state_root, output, executable
+        self.approval = copy.deepcopy(approval)
         self.owner = uuid.uuid4().hex
         self.lock = state_root / "global-active.lock"
         self.fd: int | None = None
@@ -186,18 +263,23 @@ class Execution:
             raise ValueError("Unknown execution phase")
         if phase == "research" and not self.research_authorized:
             raise ValueError("Completed isolation and source gates required")
-        records = list(self.root.glob("attempt-*.json"))
+        records = sorted(self.root.glob("attempt-*.json"))
+        recovered = approved_failure(self.root, self.approval)
         history = [json.loads(p.read_text()) for p in records]
         if any(
-            h.get("contract_hash") != CONTRACT_HASH
-            or h.get("status") != "COMPLETED"
-            or h.get("cleanup") != "CLEAN"
-            for h in history
+            p != recovered
+            and (
+                h.get("contract_hash") != CONTRACT_HASH
+                or h.get("status") != "COMPLETED"
+                or h.get("cleanup") != "CLEAN"
+            )
+            for p, h in zip(records, history, strict=True)
         ):
             raise ValueError("Existing ledger is incompatible, pending or failed")
         selected = [h for h in history if h["phase"] == phase]
-        cap = 7 if phase == "diagnostic" else 44
-        if len(history) >= 51 or len(selected) >= cap:
+        extra = int(recovered is not None)
+        cap = 7 + extra if phase == "diagnostic" else 44
+        if len(history) >= 51 + extra or len(selected) >= cap:
             raise ValueError("Shared attempt cap reached")
         if phase == "research" and (
             method not in {"B", "C"} or sum(h.get("method") == method for h in selected) >= 22
@@ -422,6 +504,16 @@ class Execution:
                         event = json.loads(line)
                         kind = event.get("item", {}).get("type")
                         typ = event.get("type")
+                        if (
+                            typ == "item.completed"
+                            and kind == "error"
+                            and not audit.get("provider_turn_started")
+                            and event["item"].get("message") in STARTUP_NOTICES
+                        ):
+                            audit.setdefault("startup_notices", []).append(event["item"]["message"])
+                            continue
+                        if typ == "turn.started":
+                            audit["provider_turn_started"] = True
                         if typ not in {
                             "thread.started",
                             "turn.started",

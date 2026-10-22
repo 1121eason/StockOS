@@ -1,0 +1,17 @@
+**
+!pyproject.toml
+!uv.lock
+!src
+!src/**
+!ui
+!ui/**
+ui/*.test.mjs
+!scripts
+!scripts/serve_ui.py
+!scripts/serve_product.py
+!scripts/product_backup.py
+!deploy
+!deploy/healthcheck.py
+!Dockerfile
+**/__pycache__
+**/*.pyc

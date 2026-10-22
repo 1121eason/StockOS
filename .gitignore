@@ -16,6 +16,10 @@ artifacts/
 
 # Optional UI development checks
 node_modules/
+/node_modules
+.env.*
+!.env.example
+/deploy/runtime/
 
 # Machine-specific UI notes must remain local
 /LOCAL_UI_USAGE.md

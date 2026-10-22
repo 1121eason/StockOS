@@ -201,7 +201,7 @@ def replay(runner, prepared, config, calls, check, prefix):
     return expected, evidence, features, challenges, rejections
 
 
-def verify(database, run_ids):
+def verify(database, run_ids, *, execution_root=None):
     runner = load_runner()
     checks: list[dict[str, Any]] = []
     result = {
@@ -214,6 +214,7 @@ def verify(database, run_ids):
         "comparison_design_status": "UNVERIFIED_FROZEN_BASELINE_MISSING",
         "winner": None,
         "promotion_ready": False,
+        "execution_receipts": "NOT_APPLICABLE_OFFLINE_SYNTHETIC",
     }
 
     def check(name, condition):
@@ -221,6 +222,16 @@ def verify(database, run_ids):
 
     try:
         path = Path(database).resolve(strict=True)
+        controlled_calls = None
+        execution_mode = "OFFLINE_SYNTHETIC"
+        if execution_root is not None:
+            verifier_path = Path(__file__).with_name("verify_nvda_q2_receipts.py")
+            spec = importlib.util.spec_from_file_location("controlled_receipts", verifier_path)
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            controlled_calls = module.verify(Path(execution_root), path)
+            execution_mode = "BOUNDED_LIVE_CANDIDATE_V2"
+            result["execution_receipts"] = "HASH_BOUND_OWNED_PROCESS_RECORDS"
         if any(Path(str(path) + suffix).exists() for suffix in ("-wal", "-shm", "-journal")):
             raise ValueError("Obtain a consistent database snapshot without SQLite sidecars")
         before = runner.compute_sha256(path.read_bytes())
@@ -338,6 +349,21 @@ def verify(database, run_ids):
                     all(row["method"] == method for group in rows.values() for row in group),
                 )
                 calls = rows["s2_provider_calls"]
+                if controlled_calls is not None:
+                    check(
+                        prefix + "controlled_execution_binding",
+                        len(calls) == 22
+                        and all(
+                            controlled_calls.get(call["id"])
+                            == {
+                                "method": method,
+                                "stage": call["stage"],
+                                "request": json.loads(call["exact_request"]),
+                                "response": json.loads(call["raw_response"]),
+                            }
+                            for call in calls
+                        ),
+                    )
                 check(
                     prefix + "call_budget",
                     0 < len(calls) <= 22
@@ -373,7 +399,7 @@ def verify(database, run_ids):
                     and summary["source_authenticity_and_pit_metadata"] == "UNVERIFIED"
                     and summary["quality_verdict"] == "UNSCORED"
                     and summary["promotion_ready"] is False
-                    and summary["execution_mode"] == "OFFLINE_SYNTHETIC"
+                    and summary["execution_mode"] == execution_mode
                     and summary["comparison_design_status"] == config["comparison_design_status"],
                 )
                 check(
@@ -415,8 +441,11 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--database", type=Path, required=True)
     parser.add_argument("--run-id", type=int, action="append", required=True)
+    parser.add_argument(
+        "--execution-root", type=Path, help="Explicit V2 receipts for live candidates"
+    )
     args = parser.parse_args(argv)
-    result = verify(args.database, args.run_id)
+    result = verify(args.database, args.run_id, execution_root=args.execution_root)
     print(json.dumps(result, indent=2, allow_nan=False))
     return 1 if result["status"] == "INCONSISTENT" else 2
 

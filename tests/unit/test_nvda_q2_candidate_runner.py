@@ -98,7 +98,8 @@ def test_new_controlled_entry_refuses_unbound_provider_before_database_access(tm
     assert not untouched.exists()
 
 
-def test_complete_synthetic_driver_binds_all_seven_raw_responses(tmp_path, monkeypatch):
+@pytest.mark.parametrize("recovery", [False, True])
+def test_complete_synthetic_driver_binds_all_seven_raw_responses(tmp_path, monkeypatch, recovery):
     from valuation_engine.ai import quarter_runtime as runtime
     from valuation_engine.ai.codex_pit import DISABLED
     from valuation_engine.ai.native_preflight import sha
@@ -138,6 +139,12 @@ def test_complete_synthetic_driver_binds_all_seven_raw_responses(tmp_path, monke
             }
         )
     )
+    if recovery:
+        from test_quarter_runtime import recovery_fixture
+
+        bound = json.loads(approval.read_bytes())
+        recovery_fixture(root, bound, monkeypatch)
+        approval.write_text(json.dumps(bound))
     receipt = kernel()
     receipt["executable_sha256"] = sha(fake.read_bytes())
     for case in receipt["cases"].values():
@@ -164,8 +171,13 @@ def test_complete_synthetic_driver_binds_all_seven_raw_responses(tmp_path, monke
         ],
     )
     module.main()
-    assert module.require_isolation(out / "isolation.json", root)["status"] == "PASS"
-    assert len(list(root.glob("attempt-*.json"))) == 7
-    (out / "call-0001/stdout.jsonl").write_text("tampered")
+    assert (
+        module.require_isolation(out / "isolation.json", root, json.loads(approval.read_bytes()))[
+            "status"
+        ]
+        == "PASS"
+    )
+    assert len(list(root.glob("attempt-*.json"))) == 7 + int(recovery)
+    (out / f"call-{1 + int(recovery):04d}/stdout.jsonl").write_text("tampered")
     with pytest.raises(ValueError, match="raw stream changed"):
-        module.require_isolation(out / "isolation.json", root)
+        module.require_isolation(out / "isolation.json", root, json.loads(approval.read_bytes()))

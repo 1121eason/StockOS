@@ -19,6 +19,7 @@ from valuation_engine.ai.quarter_runtime import (
     CLI_VERSION,
     CONTRACT_HASH,
     Execution,
+    approved_failure,
     write_json,
 )
 
@@ -73,7 +74,7 @@ def diagnostic_cases(canary):
     ]
 
 
-def require_isolation(path, state_root):
+def require_isolation(path, state_root, approval=None):
     receipt = json.loads(path.read_bytes())
     if (
         receipt.get("contract_hash") != CONTRACT_HASH
@@ -84,6 +85,13 @@ def require_isolation(path, state_root):
     ):
         raise ValueError("Complete V2 isolation receipt required")
     records = sorted(state_root.glob("attempt-*.json"))
+    recovered = approved_failure(state_root, approval or {})
+    if recovered is not None:
+        if receipt.get("attempt_ledger_sha256", {}).get(recovered.name) != sha(
+            recovered.read_bytes()
+        ):
+            raise ValueError("Retained failed attempt binding changed")
+        records.remove(recovered)
     diagnostics = [json.loads(p.read_bytes()) for p in records]
     if len(diagnostics) != 7 or any(
         d.get("phase") != "diagnostic"
@@ -96,7 +104,9 @@ def require_isolation(path, state_root):
     result_root = path.resolve().parent
     if receipt.get("private_results_root") != str(result_root):
         raise ValueError("Isolation results must be beside the selected receipt")
-    for index, (ledger_path, record) in enumerate(zip(records, diagnostics, strict=True), 1):
+    for index, (ledger_path, record) in enumerate(
+        zip(records, diagnostics, strict=True), 1 + int(recovered is not None)
+    ):
         if type(record.get("index")) is not int or record["index"] != index:
             raise ValueError("Isolation attempt sequence changed")
         if receipt.get("attempt_ledger_sha256", {}).get(ledger_path.name) != sha(
@@ -153,7 +163,7 @@ def main():
             )
         ):
             raise ValueError("All source and isolation inputs required")
-        require_isolation(args.isolation_receipt, args.state_root)
+        require_isolation(args.isolation_receipt, args.state_root, approval)
         source_receipt = verify_sources(
             args.preparation, args.raw_dir, args.browser_evidence, args.release_captures
         )
@@ -233,6 +243,7 @@ def main():
                 {
                     "contract_hash": CONTRACT_HASH,
                     "diagnostic_attempts": 7,
+                    "total_diagnostic_attempts": len(list(args.state_root.glob("attempt-*.json"))),
                     "status": "PASS" if all(g == "PASS" for g in gates.values()) else "FAIL",
                     "gates": gates,
                     "configuration_hash_before": before,

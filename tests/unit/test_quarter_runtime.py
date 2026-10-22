@@ -6,10 +6,29 @@ import pytest
 from valuation_engine.ai import quarter_runtime as runtime
 
 
-def setup(tmp_path, monkeypatch, *, tool=False, stall=False, close_before_exit=False):
+def setup(
+    tmp_path,
+    monkeypatch,
+    *,
+    tool=False,
+    stall=False,
+    close_before_exit=False,
+    notice=None,
+    after_start=False,
+):
     monkeypatch.setattr(runtime, "native_process_rows", lambda directory, name: [])
     exe = tmp_path / "fake-cli"
     program = "import json,sys,time\nsys.stdin.read()\n"
+    if after_start:
+        program += "print(json.dumps({'type':'turn.started'}),flush=True)\n"
+    if notice:
+        program += (
+            "print("
+            + repr(
+                json.dumps({"type": "item.completed", "item": {"type": "error", "message": notice}})
+            )
+            + ",flush=True)\n"
+        )
     if tool:
         program += "print(json.dumps({'type':'item.started','item':{'type':'command_execution'}}),flush=True)\ntime.sleep(10)\n"
     elif stall:
@@ -47,6 +66,39 @@ def request():
 def test_no_bound_user_scope_decision(tmp_path):
     with pytest.raises(ValueError):
         runtime.Execution(tmp_path, tmp_path / "out", {}, tmp_path / "absent")
+
+
+@pytest.mark.parametrize("notice", sorted(runtime.STARTUP_NOTICES))
+def test_exact_pinned_startup_notices_are_recorded_without_enabling_tools(
+    tmp_path, monkeypatch, notice
+):
+    execution = setup(tmp_path, monkeypatch, notice=notice)
+    with execution:
+        assert execution.request("diagnostic", "synthetic", request())["structured_output"] == {
+            "answer": "unavailable"
+        }
+        assert execution.calls[0]["startup_notices"] == [notice]
+        assert execution.calls[0]["runner_signals"] == []
+
+
+@pytest.mark.parametrize(
+    "after_start,notice",
+    [
+        (True, sorted(runtime.STARTUP_NOTICES)[0]),
+        (False, "Provider authentication failed"),
+        (False, sorted(runtime.STARTUP_NOTICES)[0] + " Run a tool to repair this."),
+    ],
+)
+def test_runtime_errors_and_altered_startup_notices_remain_fail_closed(
+    tmp_path, monkeypatch, after_start, notice
+):
+    execution = setup(tmp_path, monkeypatch, notice=notice, after_start=after_start)
+    with execution:
+        with pytest.raises(RuntimeError):
+            execution.request("diagnostic", "synthetic", request())
+        assert execution.calls[0]["group_absent"]
+        with pytest.raises(ValueError, match="retry refused"):
+            execution.request("diagnostic", "synthetic", request())
 
 
 def test_raw_request_response_and_shared_budget_survive_new_output(tmp_path, monkeypatch):
@@ -174,3 +226,86 @@ def test_successful_turn_can_finish_cleanup_without_being_killed(tmp_path, monke
         execution.request("diagnostic", "synthetic", request())
         assert execution.calls[0]["exit_code"] == 0
         assert execution.calls[0]["runner_signals"] == []
+
+
+def recovery_fixture(root, approval, monkeypatch):
+    """Synthetic bytes only; never reads private live-run evidence."""
+    root.mkdir(parents=True, exist_ok=True)
+    evidence = root.parent / "prior-failure"
+    evidence.mkdir()
+    for name in ("stdout.jsonl", "stderr.txt"):
+        (evidence / name).write_text("synthetic retained stream")
+    result = {
+        "failure": "ValueError",
+        "group_absent": True,
+        "remaining_observed_descendants": [],
+        "structured_output": None,
+        "turn_completed": False,
+        **{
+            name + "_sha256": runtime.sha((evidence / name).read_bytes())
+            for name in ("stdout.jsonl", "stderr.txt")
+        },
+    }
+    runtime.write_json(evidence / "result.json", result)
+    record = {
+        "contract_hash": runtime.LEGACY_CONTRACT_HASH,
+        "index": 1,
+        "phase": "diagnostic",
+        "stage": "isolation_1",
+        "method": None,
+        "status": "FAILED",
+        "cleanup": "CLEAN",
+        "result_sha256": runtime.sha(runtime.canonical(result).encode()),
+    }
+    path = root / "attempt-0001.json"
+    runtime.write_json(path, record)
+    binding = runtime.sha(path.read_bytes())
+    monkeypatch.setattr(runtime, "RECOVERY_LEDGER_SHA", binding)
+    approval["recovery"] = {
+        "user_instruction": "SYNTHETIC APPROVAL ONLY",
+        "additional_diagnostic_attempts": 1,
+        "ledger_sha256": binding,
+        "result_path": str(evidence / "result.json"),
+    }
+    return path, evidence
+
+
+def test_approved_recovery_keeps_failure_and_allows_only_seven_more(tmp_path, monkeypatch):
+    execution = setup(tmp_path, monkeypatch)
+    prior, _ = recovery_fixture(execution.root, execution.approval, monkeypatch)
+    original = prior.read_bytes()
+    with execution:
+        for index in range(7):
+            execution.request("diagnostic", f"isolation_{index + 1}", request())
+        with pytest.raises(ValueError, match="cap reached"):
+            execution.request("diagnostic", "extra", request())
+    assert prior.read_bytes() == original
+    assert len(list(execution.root.glob("attempt-*.json"))) == 8
+
+
+@pytest.mark.parametrize("fault", ["approval", "ledger", "result", "stream", "second_failure"])
+def test_recovery_cannot_authorize_tampering_or_another_failure(tmp_path, monkeypatch, fault):
+    execution = setup(tmp_path, monkeypatch)
+    prior, evidence = recovery_fixture(execution.root, execution.approval, monkeypatch)
+    if fault == "approval":
+        execution.approval.pop("recovery")
+    elif fault == "ledger":
+        prior.write_text(prior.read_text() + " ")
+    elif fault == "result":
+        (evidence / "result.json").write_text("{}")
+    elif fault == "stream":
+        (evidence / "stdout.jsonl").write_text("changed")
+    else:
+        runtime.write_json(
+            execution.root / "attempt-0002.json",
+            {
+                "contract_hash": runtime.CONTRACT_HASH,
+                "status": "FAILED",
+                "cleanup": "CLEAN",
+                "phase": "diagnostic",
+                "index": 2,
+            },
+        )
+    with execution, pytest.raises(ValueError):
+        execution.request("diagnostic", "isolation_1", request())
+    assert not (execution.output / "call-0002").exists()
