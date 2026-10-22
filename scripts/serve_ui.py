@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""Loopback UI with optional read-only isolated research results; no providers."""
+"""NVDA UI: loopback by default, or a private authenticated-proxy backend."""
 
 from __future__ import annotations
 
 import argparse
 import json
 import mimetypes
+import signal
 import sys
 from datetime import UTC, datetime
 from decimal import Decimal, InvalidOperation
@@ -115,6 +116,7 @@ def workspace(company_id: str) -> dict[str, Any]:
 class ResearchHTTPServer(ThreadingHTTPServer):
     research_store: Path | None = None
     workbench: Any = None
+    public_origin: str | None = None
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -193,7 +195,27 @@ class Handler(BaseHTTPRequestHandler):
         elif url.path == "/api/health":
             configured = getattr(self.server, "workbench", None) is not None
             self.json(200, {"status": "ok", "mode": "nvda" if configured else "demo", "database_connected": configured,
-                            "provider_calls": False, "backend_baseline": "0c9d858da7eb92e2387cb918bbbe5968ad2a1a54"})
+                            "provider_calls": configured, "ai_model_calls": False,
+                            "background_collection": hasattr(getattr(self.server, "workbench", None), "health"),
+                            "backend_baseline": "0c9d858da7eb92e2387cb918bbbe5968ad2a1a54"})
+        elif url.path.startswith("/api/operations"):
+            product = getattr(self.server, "workbench", None)
+            if product is None or not hasattr(product, "health"):
+                self.json(404, {"error": "尚未啟用背景更新"})
+                return
+            try:
+                if url.path == "/api/operations/health":
+                    self.json(200, product.health())
+                elif url.path == "/api/operations/history":
+                    self.json(200, {"research": product.store.history("research"),
+                                    "sources": product.store.history("source_document")})
+                elif url.path == "/api/operations/artifact":
+                    row = product.store.artifact(parse_qs(url.query).get("id", [""])[0])
+                    self.json(200 if row else 404, row or {"error": "找不到紀錄"})
+                else:
+                    self.json(404, {"error": "找不到操作紀錄"})
+            except (ValueError, OSError):
+                self.json(422, {"error": "操作紀錄無法核對"})
         elif url.path == "/api/workspace":
             try:
                 self.json(200, workspace(parse_qs(url.query).get("company", ["aurora"])[0]))
@@ -207,8 +229,9 @@ class Handler(BaseHTTPRequestHandler):
             self.json(403, {"error": "僅接受 localhost 請求"})
             return
         origin = self.headers.get("Origin")
-        if origin and origin not in (f"http://127.0.0.1:{self.port()}",
-                                     f"http://localhost:{self.port()}"):
+        allowed_origins = (f"http://127.0.0.1:{self.port()}",
+                           f"http://localhost:{self.port()}", getattr(self.server, "public_origin", None))
+        if (origin and origin not in allowed_origins) or self.headers.get("Sec-Fetch-Site") == "cross-site":
             self.json(403, {"error": "不接受其他來源的請求"})
             return
         if self.path == "/api/nvda/update":
@@ -246,6 +269,20 @@ class Handler(BaseHTTPRequestHandler):
             self.json(422, {"error": str(exc) if isinstance(exc, ValueError) else "數值格式不正確"})
 
 
+def validate_proxy_origin(origin: str) -> str:
+    """An exact HTTPS origin; authentication is provided by the private ingress."""
+    parts = urlsplit(origin)
+    if (parts.scheme != "https" or not parts.hostname or parts.username or parts.password
+            or parts.path or parts.query or parts.fragment or parts.port not in (None, 443)
+            or any(c.isspace() for c in origin) or "," in origin):
+        raise ValueError("public-origin 必須是完整 HTTPS 網域，不含路徑或帳密")
+    return origin
+
+
+def stop_service(signum: int, frame: Any) -> None:
+    raise KeyboardInterrupt
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="StockOS 本機 UI（合成示範與獨立唯讀研究）")
     parser.add_argument("--port", type=int, default=8501)
@@ -255,31 +292,60 @@ def main() -> None:
     parser.add_argument("--workbench-store", type=Path, default=ROOT / "data/nvda-workbench",
                         help="Separate local immutable research snapshots")
     parser.add_argument("--open-browser", action="store_true", help="Open the local page after startup")
+    parser.add_argument("--automation", action="store_true", help="Run durable NVDA quote/source/research background jobs in local shadow mode")
+    parser.add_argument("--product-store", type=Path, default=ROOT / "data/nvda-product")
+    parser.add_argument("--bind", choices=("127.0.0.1", "0.0.0.0"), default="127.0.0.1")
+    parser.add_argument("--behind-auth-proxy", action="store_true",
+                        help="Container private network only; never publish its port")
+    parser.add_argument("--public-origin", help="Exact HTTPS origin served by the authenticated proxy")
+    parser.add_argument("--deployment", choices=("local", "cloud"), default="local")
     args = parser.parse_args()
     if not 1024 <= args.port <= 65535:
         parser.error("port 須介於 1024 與 65535")
+    if args.automation and (not args.source_db or not args.raw_dir):
+        parser.error("背景更新需要 --source-db 與 --raw-dir")
+    if args.public_origin:
+        try:
+            validate_proxy_origin(args.public_origin)
+        except ValueError as exc:
+            parser.error(str(exc))
+    if args.bind != "127.0.0.1" and not (args.behind_auth_proxy and args.public_origin):
+        parser.error("容器網路綁定需要 --behind-auth-proxy 與 --public-origin；後端連接埠不可公開")
+    if args.deployment == "cloud" and not (args.automation and args.behind_auth_proxy and args.public_origin):
+        parser.error("雲端模式需要持久背景更新與已驗證身分的 HTTPS 入口")
     try:
-        server = ResearchHTTPServer(("127.0.0.1", args.port), Handler)
+        server = ResearchHTTPServer((args.bind, args.port), Handler)
     except OSError as exc:
         parser.exit(1, f"無法啟動：{exc}\n請改用 --port 8502，或在原終端機按 Ctrl+C。\n")
     server.research_store = args.research_store
+    server.public_origin = args.public_origin
     if args.source_db or args.raw_dir:
         if not args.source_db or not args.raw_dir:
             parser.error("--source-db 與 --raw-dir 必須一起指定")
-        from valuation_engine.research.workbench import Workbench
+        if args.automation:
+            from valuation_engine.research.product import Product
 
-        server.workbench = Workbench(args.source_db, args.raw_dir, args.workbench_store)
+            server.workbench = Product(args.source_db, args.raw_dir, args.product_store,
+                                       deployment=args.deployment)
+            server.workbench.start()
+        else:
+            from valuation_engine.research.workbench import Workbench
+
+            server.workbench = Workbench(args.source_db, args.raw_dir, args.workbench_store)
     mode = "NVDA 研究工作台" if server.workbench else "示範工作區"
     print(f"StockOS {mode}：http://127.0.0.1:{args.port}\nCtrl+C 停止；正式來源僅唯讀，更新只保存獨立工作台快照。不呼叫 AI 模型。", flush=True)
     if args.open_browser:
         import webbrowser
 
         webbrowser.open(f"http://127.0.0.1:{args.port}/nvda" if server.workbench else f"http://127.0.0.1:{args.port}")
+    signal.signal(signal.SIGTERM, stop_service)
     try:
         server.serve_forever()
     except KeyboardInterrupt:
         print("\nStockOS 已停止。")
     finally:
+        if args.automation and server.workbench:
+            server.workbench.close()
         server.server_close()
 
 

@@ -1,0 +1,58 @@
+name: Product checks
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: product-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  contracts:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: 0.13.0
+          python-version: '3.12'
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: uv sync --locked
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Python contracts (synthetic providers only)
+        run: uv run --no-sync pytest -q -rs --junitxml=artifacts/pytest.xml
+      - name: Static checks
+        run: |
+          uv run --no-sync ruff check src tests migrations
+          uv run --no-sync ruff format --check src tests migrations
+          uv run --no-sync mypy src
+          npm run check
+          npm run build
+          git diff --exit-code
+      - run: npm test
+  container:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Build locked runtime (no private data, push or deployment)
+        run: docker build --tag stockos:ci .
+      - name: Check unprivileged image and dependency imports
+        run: |
+          docker run --rm --read-only --entrypoint python stockos:ci -c 'import os; from valuation_engine.research.product import Product; assert os.getuid() == 10001; assert not os.path.exists("/app/data/qve.db")'
+      - name: Validate authenticated gateway with synthetic credentials
+        env:
+          STOCKOS_DOMAIN: stockos.example.com
+          STOCKOS_USER: synthetic-test-only
+        run: |
+          export STOCKOS_PASSWORD_HASH="$(docker run --rm caddy:2.11.7-alpine caddy hash-password --plaintext synthetic-test-only)"
+          docker run --rm -e STOCKOS_DOMAIN -e STOCKOS_USER -e STOCKOS_PASSWORD_HASH -v "$PWD/deploy/Caddyfile:/etc/caddy/Caddyfile:ro" caddy:2.11.7-alpine caddy validate --config /etc/caddy/Caddyfile

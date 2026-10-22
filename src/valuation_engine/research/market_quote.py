@@ -59,6 +59,8 @@ def parse_quote(payload: dict, basis_date: str, observed_at: datetime) -> dict[s
             "quoted_at": quoted_at,
             "retrieved_at": observed_at,
             "session": "regular",
+            "quote_type": "last_regular_trade",
+            "delay_status": "unverified_not_guaranteed_realtime",
             "label": "最近常規交易成交價",
             "provider": "Yahoo Finance",
             "source_url": SOURCE,

@@ -1,0 +1,34 @@
+{
+    admin off
+    servers {
+        timeouts {
+            read_header 10s
+            read_body 10s
+            idle 60s
+        }
+    }
+}
+
+{$STOCKOS_DOMAIN} {
+    basic_auth {
+        {$STOCKOS_USER} {$STOCKOS_PASSWORD_HASH}
+    }
+    request_body {
+        max_size 8KB
+    }
+    @product path / /nvda /nvda.js /nvda.css /domain.mjs /favicon.svg /api/nvda /api/nvda/update /api/operations/*
+    handle @product {
+        reverse_proxy app:8511 {
+            header_up Host 127.0.0.1:8511
+            header_up -Authorization
+            transport http {
+                dial_timeout 5s
+                response_header_timeout 20s
+            }
+        }
+    }
+    handle {
+        respond "Not found" 404
+    }
+    header Strict-Transport-Security "max-age=31536000"
+}
