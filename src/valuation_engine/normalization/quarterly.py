@@ -50,9 +50,10 @@ class Quarter(BaseModel):
 class PointInTimeRepository:
     """Financial-fact allowlist only. Never accepts free-form table/feature names."""
 
-    def __init__(self, db: Session, company_id: int):
+    def __init__(self, db: Session, company_id: int, *, source_document_ids=None):
         self._db = db
         self.company_id = company_id
+        self.source_document_ids = source_document_ids
 
     def normalize_eps(self, observation: Observation, basis_date: date) -> Decimal | None:
         from valuation_engine.hardening.basis import SplitBasis
@@ -84,7 +85,14 @@ class PointInTimeRepository:
                 )
             ).all()
         )
-        facts = [f for f in facts if resolver.time(f) <= as_of]
+        facts = [
+            f
+            for f in facts
+            if resolver.time(f) <= as_of
+            and (
+                self.source_document_ids is None or f.source_document_id in self.source_document_ids
+            )
+        ]
         if not facts:
             return None
 
@@ -148,7 +156,15 @@ class PointInTimeRepository:
                     )
                 ).all()
             )
-            previous = [f for f in previous if resolver.time(f) <= as_of]
+            previous = [
+                f
+                for f in previous
+                if resolver.time(f) <= as_of
+                and (
+                    self.source_document_ids is None
+                    or f.source_document_id in self.source_document_ids
+                )
+            ]
             # Prefer comparative YTD from SAME accession; otherwise selected PIT vintage.
             matching = [x for x in previous if x.source_document_id == current.source_document_id]
             prior = pick(matching or previous)

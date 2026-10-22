@@ -1,0 +1,132 @@
+{
+  "version": "NVDAFinancialRefreshAcceptanceV1",
+  "date": "2026-10-22",
+  "base_main": "79371304fd37b6d04d67accd3369bd734fb045fd",
+  "real_pipeline": {
+    "status": "PASS",
+    "current": "FY2027-Q2",
+    "previous": "FY2027-Q1",
+    "snapshot_id": "01e6cbec5b266633514d605fed39c0d625be879dbed984d2e55044a249c86c23",
+    "database_ref": "2fe8d7dbbc372a4fd06781e38143045a344cfd39a4f28bb2258a68a5973a159a",
+    "model_base": "246.23217846",
+    "quote": {
+      "basis_verification": "provider_asserted_split_events_not_independently_verified",
+      "currency": "USD",
+      "delay_status": "unverified_not_guaranteed_realtime",
+      "label": "最近常規交易成交價",
+      "limitation": "不含盤前、盤後或夜盤；非保證即時報價。拆股紀錄來自同一供應商，未獨立核證。",
+      "price": "221.97000000",
+      "provider": "Yahoo Finance",
+      "quote_type": "last_regular_trade",
+      "quoted_at": "2026-10-21T20:00:00+00:00",
+      "response_sha256": "f5f672fb2c570b57aa14c6f47523b9776db861974aded3980d05138a70d337f0",
+      "retrieved_at": "2026-10-22T02:25:31.098115+00:00",
+      "session": "regular",
+      "source_url": "https://finance.yahoo.com/quote/NVDA/",
+      "split_events": [],
+      "split_factor_since_valuation": "1.00000000",
+      "status": "available",
+      "ticker": "NVDA",
+      "valuation_basis_date": "2026-10-21"
+    },
+    "reconciliation": {
+      "comparisons": [
+        {
+          "formula": "reported",
+          "ir_fact_id": 2652,
+          "metric": "revenue",
+          "sec_fact_ids": [
+            2579
+          ],
+          "status": "match"
+        },
+        {
+          "formula": "reported",
+          "ir_fact_id": 2655,
+          "metric": "operating_income",
+          "sec_fact_ids": [
+            2603
+          ],
+          "status": "match"
+        },
+        {
+          "formula": "reported",
+          "ir_fact_id": 2656,
+          "metric": "net_income",
+          "sec_fact_ids": [
+            2607
+          ],
+          "status": "match"
+        },
+        {
+          "formula": "current_ytd_minus_previous_ytd",
+          "ir_fact_id": 2677,
+          "metric": "ocf",
+          "sec_fact_ids": [
+            2633,
+            2563
+          ],
+          "status": "match"
+        },
+        {
+          "formula": "current_ytd_minus_previous_ytd",
+          "ir_fact_id": 2678,
+          "metric": "capex",
+          "sec_fact_ids": [
+            2635,
+            2565
+          ],
+          "status": "match"
+        }
+      ],
+      "source_document_ids": [
+        88,
+        89,
+        121
+      ],
+      "status": "matched"
+    },
+    "portable_seed_sources": 118,
+    "backup_research_databases": [
+      "2fe8d7dbbc372a4fd06781e38143045a344cfd39a4f28bb2258a68a5973a159a"
+    ],
+    "restart_and_restore_same_research": true,
+    "original_database_sha256": "0d1f02365dca289281212fcc7716f23197f18a09f353f08e771e7f0245369c23",
+    "original_database_unchanged": true,
+    "ai_calls": 0,
+    "formal_database_writes": 0
+  },
+  "python_tests": {
+    "tests": "1390",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "5",
+    "time": "55.056"
+  },
+  "ui_tests": {
+    "passed": 32,
+    "failed": 0
+  },
+  "browser": {
+    "manual_update_completed": true,
+    "fiscal_year_selection": true,
+    "evidence_expansion": true,
+    "process_restart_same_values": true
+  },
+  "container": {
+    "platform": "linux/amd64",
+    "uid": 10001,
+    "network": "none",
+    "readonly_research_reverified": true,
+    "production_deployed": false
+  },
+  "private_evidence_sha256": {
+    "acceptance.json": "c13e1a2499d874a115b36ded6d764d22a15707ec728f6a1fd6ad27a92594994a",
+    "pytest-native.xml": "6c5873ee8d33a1995c3eaeff8e3fa4dd5f8636753557b717a0ef0123ea781472",
+    "ui-tests-final.log": "d1daed6de900bb860d00c58f3b6ea1cc11bc72cba92e74102e9654e6c72aa7ed",
+    "browser-evidence.txt": "86d17dc9e39c5d243485170b1f167cb0a231fc613a784a6d5b50a7fc5c9c9061",
+    "browser-restart.txt": "0e7709d16784472cf38a3f630451c615c87f959303a58e70acc4c3f68bd665d3",
+    "workbench.png": "87ff72431bd87cea8571a3b2cd97bd9798c93dceef67a96103de13c642885ffb",
+    "container-verify.log": "a3dad34009f253350c9940e32da7b62fe4a6a0e3396cfa9856d41d949d79af15"
+  }
+}

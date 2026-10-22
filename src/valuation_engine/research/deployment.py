@@ -1,8 +1,8 @@
 """Prepare and validate a private, versioned, read-only deployment seed.
 
 No uploads, credentials, AI calls or writes to the source database. The seed
-contains the existing research database and only the raw sources used by the
-two-quarter workbench. It is private data, never an image build input.
+contains the existing research database and NVDA source bytes required for
+subsequent financial rebuilds. It is private data, never an image build input.
 """
 
 import json
@@ -12,9 +12,42 @@ import tempfile
 from datetime import UTC, datetime
 from pathlib import Path
 
-from valuation_engine.research.workbench import build_research, file_hash, source_preflight
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from valuation_engine.db.schema import Company, SourceDocument
+from valuation_engine.research.workbench import (
+    build_research,
+    file_hash,
+    readonly_engine,
+    source_preflight,
+)
 
 VERSION = "StockOSSeedV1"
+
+
+def refresh_source_hashes(source_db: Path, raw_dir: Path) -> set[str]:
+    """Future forecasts reparse prior IR guidance; package those bytes too."""
+    engine = readonly_engine(source_db)
+    try:
+        with Session(engine, autoflush=False) as db:
+            hashes = set(
+                db.scalars(
+                    select(SourceDocument.content_hash)
+                    .join(Company, Company.id == SourceDocument.company_id)
+                    .where(
+                        Company.ticker == "NVDA",
+                        SourceDocument.source_provider.in_(("NVIDIA IR", "SEC")),
+                    )
+                )
+            )
+        for identity in hashes:
+            path = raw_dir / identity
+            if path.is_symlink() or file_hash(path) != identity:
+                raise ValueError("seed_source_hash_mismatch")
+        return hashes
+    finally:
+        engine.dispose()
 
 
 def verify_seed(root: Path) -> dict:
@@ -46,7 +79,9 @@ def prepare_seed(source_db: Path, raw_dir: Path, destination: Path) -> dict:
     ):
         raise ValueError("seed_must_be_separate_from_source")
     research = build_research(source_db, raw_dir)
-    hashes = sorted({item["sha256"] for item in research["sources"]})
+    hashes = sorted(
+        {item["sha256"] for item in research["sources"]} | refresh_source_hashes(source_db, raw_dir)
+    )
     manifest = {
         "version": VERSION,
         "ticker": "NVDA",
@@ -58,6 +93,7 @@ def prepare_seed(source_db: Path, raw_dir: Path, destination: Path) -> dict:
         "classification": "private_readonly_research_seed",
         "local_login_files_included": False,
         "database_scope": "complete_existing_research_database_copy",
+        "source_scope": "NVDA_SEC_AND_IR_INCLUDING_PRIOR_GUIDANCE_FOR_FINANCIAL_REBUILD",
         "historical_records": "preserved_not_revalidated_or_approved_by_this_export",
     }
     destination.parent.mkdir(parents=True, exist_ok=True)

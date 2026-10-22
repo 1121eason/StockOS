@@ -1,6 +1,6 @@
 import hashlib
 import json
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 from typing import Any
 
@@ -35,6 +35,8 @@ def ingest_sec(
     client: SourceClient | None = None,
     *,
     download_filings: bool = True,
+    period_end: date | None = None,
+    observed_at: datetime | None = None,
 ) -> dict[str, Any]:
     http = client or SourceClient(settings.require_sec_identity())
     co = company(db)
@@ -54,6 +56,11 @@ def ingest_sec(
                 SourceDocument.content_hash == hashlib.sha256(content).hexdigest(),
             )
         )
+        if observed_at is not None:
+            kwargs["metadata"] = {
+                **kwargs.get("metadata", {}),
+                "product_observed_at": observed_at.isoformat(),
+            }
         row = document(db, settings.qve_raw_dir, content, **kwargs)
         audit["documents_skipped" if exists is not None else "documents_created"] += 1
         return row
@@ -72,6 +79,8 @@ def ingest_sec(
     )
     rows = filing_rows(submissions["filings"]["recent"])
     for chunk in submissions["filings"].get("files", []):
+        if period_end is not None:
+            continue
         if chunk.get("filingTo", "") < "2019-01-01":
             continue
         url = f"{base}/submissions/{chunk['name']}"
@@ -87,6 +96,10 @@ def ingest_sec(
         rows.extend(filing_rows(json.loads(history)))
     filings: dict[str, Filing] = {}
     for row in rows:
+        if period_end is not None and (
+            row.get("reportDate") != period_end.isoformat() or row["form"] not in ("10-Q", "10-K")
+        ):
+            continue
         if (
             row["form"] not in ("10-Q", "10-K", "10-Q/A", "10-K/A", "8-K", "8-K/A")
             or row["filingDate"] < "2019-01-01"
@@ -191,6 +204,10 @@ def ingest_sec(
             },
         )
         docs[filing_id] = doc
+        if doc.metadata_json.get("product_observed_at"):
+            available = max(
+                available, datetime.fromisoformat(doc.metadata_json["product_observed_at"])
+            )
         from valuation_engine.hardening.shares import ingest_structured_shares
 
         share_results.append(
