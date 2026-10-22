@@ -5,7 +5,7 @@ NVDA only. No trading signals, fitted thresholds, brokerage connection or claime
 
 Current source integration and four-layer progress: [2026-10-21 progress report](docs/PROGRESS_REPORT_2026_10_21.md). Branch integration does not constitute AI, investment-decision, or production acceptance.
 
-**NVDA continuous research, in progress:** [Product delivery and acceptance matrix](docs/product/DELIVERY_2026_10_22.md), [operation and cloud preparation](docs/product/OPERATIONS.md). Adds independent quote updates, official-source collection, durable jobs, version history and recovery. New financial reconciliation, forward target valuation, AI acceptance and actual cloud deployment remain separate gates.
+**NVDA continuous research, in progress:** [Product delivery and acceptance matrix](docs/product/DELIVERY_2026_10_22.md), [operation and cloud preparation](docs/product/OPERATIONS.md). PR #6 completed the local official-release/SEC reconciliation and research rebuild path, verified with existing real FY2027-Q2; the next new quarter remains unobserved. [AI review corrections](docs/product/AI_REVIEW_REVISIONS_2026_10_22.md), [12-month target-price method draft](docs/product/TARGET_PRICE_METHOD_DRAFT_2026_10_22.md), and [GCP deployment status](docs/product/CLOUD_R1_PLAN_2026_10_22.md) track the remaining independent gates. Neither a cloud project nor a budget alert establishes an operating cloud product.
 
 **NVDA research workbench:** [Open and update a connected quarterly research page](docs/NVDA_WORKBENCH.md), with a sourced regular-session quote beside the dated model value. It reads existing formal data without writing it, reconciles the original formulas, and saves separate local snapshots. [Delivery and validation](docs/NVDA_WORKBENCH_DELIVERY_2026_10_21.md); [independent AI acceptance workstream](docs/AI_RESEARCH_SUPPLEMENT_2026_10_21.md).
 
@@ -15,7 +15,7 @@ Current source integration and four-layer progress: [2026-10-21 progress report]
 
 ## Milestone 4 AI Analyst
 
-M1–M3.1 have PM Review pass. M4 adds evidence-first qualitative interpretation and advisory challenges; it does not calculate forecasts, valuation or regime. [Method](docs/AI_ANALYST_METHOD.md), [current report](docs/MILESTONE_4_EXECUTION_REPORT.md). The infrastructure is tested; actual historical AI results and human review are still pending provider setup. Missing inputs are never replaced with fixture results.
+M1–M3.1 have PM Review pass. M4 adds evidence-first qualitative interpretation and advisory challenges; it does not calculate forecasts, valuation or regime. [Method](docs/AI_ANALYST_METHOD.md), [historical report](docs/MILESTONE_4_EXECUTION_REPORT.md). The real FY2023-Q2 run is complete; the owner adopted two feedback submissions, while the second filled original remains unavailable and formal independent reviews remain 0/2. Offline revised candidates are unscored and unpromoted. See the [latest review corrections](docs/product/AI_REVIEW_REVISIONS_2026_10_22.md); historical evidence is not current-quarter acceptance. Missing inputs are never replaced with fixture results.
 
 Set `QVE_AI_PROVIDER`, `QVE_AI_MODEL`, `QVE_AI_MODEL_VERSION` and `OPENAI_API_KEY` locally for the OpenAI adapter. The actual response model must match the pinned version. Another provider can implement AIProvider. Never commit or paste keys.
 

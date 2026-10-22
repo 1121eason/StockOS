@@ -1,0 +1,9 @@
+[Unit]
+Description=Consistent StockOS backup to private Cloud Storage
+After=stockos.service network-online.target
+RequiresMountsFor=/srv/stockos
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/stockos-backup
+TimeoutStartSec=900

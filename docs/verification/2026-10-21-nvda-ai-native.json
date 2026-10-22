@@ -1,0 +1,186 @@
+{
+  "date": "2026-10-21",
+  "generated_at": "2026-10-21T06:59:31.386659+00:00",
+  "base_commit": "4f45f2d0174c1dba77516a9a4cae03577f0eeae6",
+  "pr3_merged": true,
+  "scope": "NVDA_FY2023_Q2_RESEARCH_SUPPLEMENT_ONLY",
+  "prepared": {
+    "protocol_hash": "5aff6b73e6b83a5f159e66dce277eb4412c83d13624bfda6a3ce2dce91d44e1d",
+    "package_hash": "51164d6740f177141db77880f29b79c606651d187402bc8edc6dcf7b2f6cb885",
+    "quarter": "FY2023-Q2",
+    "information_cutoff": "2022-08-25T13:30:00+00:00",
+    "source_count": 4,
+    "narrative_blocks": 932,
+    "excluded_blocks": 22,
+    "extraction_chunks": 20,
+    "planned_attempts_per_method": 22,
+    "planned_attempts_per_pair": 44,
+    "budget": {
+      "attempts_per_method": 22,
+      "attempts_per_pair": 44,
+      "challenge_timeout_seconds": 600,
+      "chunk_characters": 18000,
+      "extract_timeout_seconds": 180,
+      "outer_retries": 0,
+      "synthesize_timeout_seconds": 600
+    },
+    "budget_status": "WITHIN_SINGLE_PAIR_CAP",
+    "complete_cached_source_replay": "PASS",
+    "historical_availability": "UNVERIFIED"
+  },
+  "cli": {
+    "cli_version": "codex-cli 0.163.0-alpha.10.2",
+    "required_transport_cli_version": "codex-cli 0.153.4",
+    "executable_sha256": "1afb28c01d7d49e892bd75f11076b10f1451e34e0ee308a95e5ab7f69f9c84fe",
+    "authenticated": true,
+    "requested_model": "gpt-6-astra",
+    "actual_model": null,
+    "model_identity_status": "NOT_OBSERVED_NO_MODEL_CALL",
+    "features_verified": true,
+    "reason": "UNSUPPORTED_CLI_CONTRACT"
+  },
+  "native": {
+    "named_profile_isolation": "PASS_COMMAND_PROBE_ONLY",
+    "command_cases": {
+      "outside_read": "DENIED_WITH_SUCCESSFUL_CONTROL",
+      "workspace_write": "DENIED_WITH_SUCCESSFUL_CONTROL",
+      "network_connect": "DENIED_WITH_SUCCESSFUL_CONTROL"
+    },
+    "owned_synthetic_process": {
+      "ownership": "CREATED_BY_THIS_PROBE",
+      "timeout_observed": true,
+      "reaped": true,
+      "group_absent": true,
+      "cleanup_status": "CLEAN",
+      "termination_requested": true,
+      "exit_code": -9
+    },
+    "global_census_observed": true,
+    "candidate_processes_at_observation": 160,
+    "global_classification": "UNVERIFIED_NO_REVIEWED_EXEMPTIONS",
+    "full_provider_runtime_verified": false,
+    "failed_prior_cleanup_receipt_preserved": true
+  },
+  "sources": [
+    {
+      "source_document_id": 10,
+      "exact_cached_bytes_match": false,
+      "http_status": 200,
+      "narrative_check": {
+        "selected_blocks": 38,
+        "matching_blocks": 38,
+        "missing_block_ids": [],
+        "current_official_narrative": "ALL_SELECTED_TEXT_PRESENT",
+        "historical_availability": "UNVERIFIED_CURRENT_CAPTURE_ONLY"
+      },
+      "source_authenticity_status": "UNVERIFIED_CAPTURE_DIFFERS",
+      "historical_availability": "UNVERIFIED"
+    },
+    {
+      "source_document_id": 9,
+      "exact_cached_bytes_match": false,
+      "http_status": 200,
+      "narrative_check": {
+        "selected_blocks": 45,
+        "matching_blocks": 45,
+        "missing_block_ids": [],
+        "current_official_narrative": "ALL_SELECTED_TEXT_PRESENT",
+        "historical_availability": "UNVERIFIED_CURRENT_CAPTURE_ONLY"
+      },
+      "source_authenticity_status": "UNVERIFIED_CAPTURE_DIFFERS",
+      "historical_availability": "UNVERIFIED"
+    },
+    {
+      "source_document_id": 107,
+      "exact_cached_bytes_match": null,
+      "http_status": 403,
+      "narrative_check": null,
+      "source_authenticity_status": "UNVERIFIED_FETCH_FAILED",
+      "historical_availability": "UNVERIFIED"
+    },
+    {
+      "source_document_id": 108,
+      "exact_cached_bytes_match": null,
+      "http_status": 403,
+      "narrative_check": null,
+      "source_authenticity_status": "UNVERIFIED_FETCH_FAILED",
+      "historical_availability": "UNVERIFIED"
+    }
+  ],
+  "validation": {
+    "python": {
+      "tests": 1357,
+      "passed": 1352,
+      "skipped": 5,
+      "failed": 0,
+      "errors": 0,
+      "seconds": 64.24
+    },
+    "ruff": "PASS",
+    "format_files": 142,
+    "mypy_source_files": 85,
+    "new_synthetic_test_cases": 24,
+    "initial_restricted_run": {
+      "passed": 1341,
+      "failed": 3,
+      "errors": 6,
+      "skipped": 5,
+      "limitation": "Loopback and subprocess isolation restricted; original failed receipts preserved."
+    },
+    "ui_changed": false,
+    "new_browser_acceptance_this_phase": false
+  },
+  "ready_for_live": false,
+  "blockers": [
+    "CLI_VERSION_CHANGED_REQUALIFICATION_REQUIRED",
+    "NATIVE_ISOLATION_AND_LIFECYCLE_NOT_APPROVED",
+    "GLOBAL_PROCESS_CLASSIFICATION_NOT_APPROVED",
+    "ACTUAL_MODEL_IDENTITY_NOT_OBSERVED",
+    "HISTORICAL_SOURCE_AVAILABILITY_NOT_AUTHENTICATED",
+    "OFFICIAL_SOURCE_BYTES_NOT_ALL_RECONFIRMED"
+  ],
+  "live_model_attempts": 0,
+  "human_reviews_completed": 0,
+  "quality_verdict": "UNSCORED",
+  "winner": null,
+  "promotion_ready": false,
+  "preservation": {
+    "formal_database_sha256": "0d1f02365dca289281212fcc7716f23197f18a09f353f08e771e7f0245369c23",
+    "matches_preparation_readonly_hash": true,
+    "formal_db_writes_this_task": 0,
+    "formal_schema_changes": 0,
+    "other_stocks_added": 0
+  },
+  "deployment": false,
+  "runtime_data_included": false,
+  "private_artifact_sha256": {
+    "authorization.json": "121c1b2f7dff21d9708f191596c265cee715ce7eb2883211ba95f5d0fb51f509",
+    "final-current-audit/prepared.json": "e4ad386dffdd70f2dfea5b7c61f5492c1a430b3c65b741416667299ec5749d77",
+    "final-current-audit/cli-discovery.json": "eab69837c1636393f5cbacd2bb8669b48cd80241383aac340385def8f5181a0b",
+    "final-current-audit/sources.json": "a53a35b4483ff592766f1e181c55b3119b3394a74e517e88eb87501a1fd7a6ff",
+    "final-current-audit/receipt.json": "a580a129f8e3784006ec1740998b834cd6f6794046065131635c57dbcad6c3e1",
+    "verified-command-probe/receipt.json": "9af958a213710f3a97691ab6620baaafb46319ac171c8988aad72de0f9849b16",
+    "after-final-validation-process-census.json": "550b5801a30faddebc049398bea59904255a39ed02fb8c678d96bede2d76d451",
+    "preservation.json": "6d6f780b866208d39a8d2b901f19fbd11acc79d5b2681c1f486f9917be30961e",
+    "w1-preservation-audit.json": "46ad9ad9459f68b46890c49718ea7cd0df9e1c7412c7154bb7215eacf41d2ad3",
+    "cleanup-failure-observation.json": "dff321751c98fa50ba0979b1af29ce43c4c275b608c4fbfa15481da8fed902ce",
+    "final-command-probe/receipt.json": "f5038fbf5221900eb913ddcec1e9ec4926b1a2c18f342ea00914b2c58ba5a749",
+    "validation/pytest.xml": "335921783cb549f74bd581f40bc2aa049bd0799ba18bd10a81868c15afc615ab",
+    "validation/pytest.log": "a94782a8fae45d241bc38bf0d7c3931aaa85b236ec771e88f7227c0f3e14db78",
+    "validation/pytest-native.xml": "430f9c0f84c84412713c8dab1a652f5e031e30139f18894d8f238bc067b7ba05",
+    "validation/pytest-native.log": "2855bbcec96b2b8f517c1ba7ae6f1e7b4dfdca420c10c78b749e5c23887894a0",
+    "validation/pytest-final.xml": "99a353508d81bbed8a564d44c0726d6e400e372408a0e4ac6ec8650eb87181c4",
+    "validation/pytest-final.log": "4998aabf0aa506ba416a460547f1d1fb3fc5068dd1b2ea4495343bc5e8ed3821",
+    "validation/ruff-final.log": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+    "validation/format-final.log": "b419319d53a875220e0cf380a0e112a7af774f4615d33e5a07dd68bc3bdd20e5",
+    "validation/mypy-final.log": "9ad320a85ca21c0eff33d60d04b500d1f61878a0511449d431cc57cbc0d0a44d"
+  },
+  "source_files_sha256": {
+    "scripts/preflight_nvda_ai.py": "68f17406c7fb6fe2d6f165187ea1726ed20c4c78b759c0a95414664000541017",
+    "scripts/probe_nvda_ai_runtime.py": "dc2385d5d9c75844c0e26cfc003a05d757d71b04b3ebe47df1cabfcab43e0f00",
+    "src/valuation_engine/ai/native_preflight.py": "bcf17e4735c15cd6ea64f94e47602360ab980dfadba78dabf12cdf5edaff915c",
+    "tests/unit/test_nvda_ai_preflight.py": "1ed9e4f235753bd620a4b902192bca00b323b58368c2feeee7d1177c1dcc2eaf",
+    "docs/AI_SINGLE_QUARTER_PROGRESS_2026_10_21.md": "73c17ac97ad545af420020ff1b2a1f309c851eb6a021190a4d25105c61d9b4a9",
+    "docs/AI_RESEARCH_SUPPLEMENT_2026_10_21.md": "13737a9e47fd9bb5e0c56509c405c6126ff2c2d31bc43abfe4fa14bf22d63bb7"
+  }
+}

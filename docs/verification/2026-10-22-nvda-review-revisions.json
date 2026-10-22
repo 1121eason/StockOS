@@ -1,0 +1,49 @@
+{
+  "version": "NVDAReviewRevisionV1",
+  "quarter": "FY2023-Q2",
+  "current_workbench_quarter": "FY2027-Q2",
+  "owner_adopted_feedback": 2,
+  "filled_originals_verified": 1,
+  "independent_blind_reviews": 0,
+  "required_independent_blind_reviews": 2,
+  "quality_verdict": "UNSCORED",
+  "promotion_ready": false,
+  "winner": null,
+  "revised_features": 48,
+  "reclassified_features": 21,
+  "duplicate_quote_count_explanations": 8,
+  "numeric_signals_withheld": 48,
+  "new_provider_calls": 0,
+  "database_writes": 0,
+  "original_packet_hash": "4664e3639dd37b3bef66eda2b52b3891ce9ffab36bdeffec67a0ad965cad7636",
+  "original_candidate_database_sha256": "66a3745e7432fc125577e1fbeeb767eba0f1fce59da78c22e3b12fe68090aea7",
+  "original_files_unchanged": true,
+  "python_validation": {
+    "collected": 1480,
+    "initial_environment_failures": 10,
+    "native_recheck_passed": 66,
+    "all_initial_failures_covered_by_native_passes": true,
+    "combined_passed": 1475,
+    "skipped": 5,
+    "unresolved": 0,
+    "single_full_native_run": false
+  },
+  "ui_validation": {
+    "focused_passed": 27,
+    "whole_suite_pass_claimed": false,
+    "new_browser_acceptance_claimed": false
+  },
+  "cloud": {
+    "project": "stockos-eason-20261022",
+    "monthly_budget_twd": 1000,
+    "budget_alert_thresholds": [0.5, 0.8, 1.0],
+    "budget_is_vm_hard_cap": false,
+    "status": "PLAN_FIRST_REQUESTED_BY_OWNER",
+    "compute_api_enabled": false,
+    "runtime_resources_created": false,
+    "terraform_validate": "PASS",
+    "terraform_plan_executed": false,
+    "terraform_apply_executed": false,
+    "deployed": false
+  }
+}

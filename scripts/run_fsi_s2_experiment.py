@@ -236,6 +236,72 @@ def run_single_method(
         raise ValueError(LIVE_BLOCK_REASON)
     if execution_mode != "OFFLINE_SYNTHETIC":
         raise ValueError("Explicit OFFLINE_SYNTHETIC execution mode required")
+    return _method_engine(
+        method_key,
+        method_config,
+        provider,
+        prepared_data,
+        candidate_db_path,
+        source_contents=source_contents,
+        execution_mode=execution_mode,
+    )
+
+
+def run_controlled_method(
+    method_key, method_config, execution, prepared_data, candidate_db_path, *, source_contents
+):
+    """Separate V2 path; the old live flags and entry point remain rejected."""
+    from valuation_engine.ai.quarter_runtime import CONTRACT_HASH, Execution
+
+    if (
+        not isinstance(execution, Execution)
+        or not execution.active
+        or not execution.research_authorized
+        or execution.identity.get("contract_hash") != CONTRACT_HASH
+    ):
+        raise ValueError("Bound, active V2 execution with completed prerequisite gates required")
+
+    class Provider:
+        def request(self, stage, exact):
+            print(
+                json.dumps(
+                    {
+                        "method": method_config["method"],
+                        "stage": stage,
+                        "next_attempt": len(execution.calls) + 1,
+                    }
+                ),
+                flush=True,
+            )
+            return execution.request(
+                "research",
+                stage,
+                exact,
+                method=method_config["method"],
+                timeout=180 if stage == "extract" else 600,
+            )
+
+    return _method_engine(
+        method_key,
+        method_config,
+        Provider(),
+        prepared_data,
+        candidate_db_path,
+        source_contents=source_contents,
+        execution_mode="BOUNDED_LIVE_CANDIDATE_V2",
+    )
+
+
+def _method_engine(
+    method_key,
+    method_config,
+    provider,
+    prepared_data,
+    candidate_db_path,
+    *,
+    source_contents,
+    execution_mode,
+):
     method = method_config["method"]
     if method not in {"B", "C"} or method_key != "method_" + method.lower():
         raise ValueError("Method identity mismatch")

@@ -31,7 +31,7 @@ uv run python scripts/prepare_product_seed.py \
 
 資料包包含現有研究 DB 的完整複本、兩季工作台原件及後續重建需要的 NVDA SEC／IR 原件（含較早期指引）。DB 保留既有歷史 AI 紀錄；匯出不批准、重用或重新驗收這些紀錄。工具要求目標為新目錄，核對來源及複本，再原子完成資料包。`seed-manifest.json` 綁定 DB／raw hashes；啟動時再次檢查。這是私有部署資料，不是程式碼或容器映像檔。原始來源不寫入、不遷移，不複製本機登入檔或環境設定。只傳送至使用者指定的私有部署位置。
 
-映像只包含程式與鎖定相依套件；建置 context 使用 `.dockerignore` 白名單。正式部署使用建置後的 image digest，記錄 CPU 架構及基礎映像 digest。沒有正式 push／部署程序或預設雲端專案。
+映像只包含程式與鎖定相依套件；建置 context 使用 `.dockerignore` 白名單。正式部署使用建置後的 image digest，記錄 CPU 架構及基礎映像 digest。後續已準備 [StockOS 專用 GCP 設定](../../deploy/gcp/README.md)，實際資源與運轉驗收以 [雲端收據](CLOUD_R1_PLAN_2026_10_22.md) 為準。
 
 ## 雲端入口與持久保存
 
