@@ -110,9 +110,9 @@ def attach_quality(pack, ledger):
     return pack
 
 
-def extract_corrected(db, run, previous_runs, policy):
+def extract_corrected(db, run, previous_runs, policy, *, allow_live=False):
     context: dict[str, Any] = {}
-    pack = extract(db, run, previous_runs, policy, context=context)
+    pack = extract(db, run, previous_runs, policy, context=context, allow_live=allow_live)
     data, periods = context["data"], context["periods"]
     nodes: dict[str, Any] = {}
     graph: dict[str, list[str]] = {f: [] for f in pack["features"]}

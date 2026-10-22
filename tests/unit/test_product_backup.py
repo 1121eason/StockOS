@@ -65,3 +65,28 @@ def test_tampered_product_artifact_prevents_backup(state, tmp_path):
         db.execute("UPDATE artifacts SET payload='{}' WHERE kind='research'")
     with pytest.raises(ValueError, match="artifact_hash"):
         backup_state(state.root, tmp_path / "backup")
+
+
+def test_backup_restores_new_immutable_research_and_its_evidence(state, tmp_path):
+    raw_hash = next((state.root / "raw").iterdir()).name
+    content = b"synthetic immutable research database bytes"
+    identity = hashlib.sha256(content).hexdigest()
+    (state.root / "research").mkdir()
+    (state.root / "research" / (identity + ".sqlite")).write_bytes(content)
+    saved = state.publish(
+        "research",
+        "rebuilt",
+        {"database_ref": identity, "database_source_hashes": [raw_hash]},
+        4,
+        pointer="research",
+    )
+    backup, restored = tmp_path / "new-backup", tmp_path / "new-restore"
+    manifest = backup_state(state.root, backup)
+    assert manifest["research_databases"] == [identity]
+    restore_state(backup, restored)
+    assert (restored / "research" / (identity + ".sqlite")).read_bytes() == content
+    assert ProductStore(restored).latest("research")["id"] == saved
+    (backup / "research" / (identity + ".sqlite")).write_bytes(b"corrupted")
+    with pytest.raises(ValueError, match="research_database_hash"):
+        restore_state(backup, tmp_path / "must-not-publish")
+    assert not (tmp_path / "must-not-publish").exists()

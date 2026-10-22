@@ -14,18 +14,24 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, TextIO
 
-from valuation_engine.research import discovery
+from valuation_engine.research import discovery, financial_refresh
 from valuation_engine.research.market_quote import compare_price, fetch_quote
 from valuation_engine.research.product_store import ProductStore, digest
 from valuation_engine.research.workbench import build_research
 
-VERSION = "NVDAProductShadowV1"
-INTERVALS = {"COLLECT_QUOTES": 300, "DISCOVER_SOURCES": 3600, "VERIFY_RESEARCH": 21600}
+VERSION = "NVDAProductRefreshV2"
+INTERVALS = {
+    "COLLECT_QUOTES": 300,
+    "DISCOVER_SOURCES": 3600,
+    "VERIFY_RESEARCH": 21600,
+    "REFRESH_FINANCIALS": 3600,
+}
 LABELS = {
     "COLLECT_QUOTES": "股價更新",
     "DISCOVER_SOURCES": "官方公告檢查",
     "INGEST_DOCUMENT": "公告保存與解析",
     "VERIFY_RESEARCH": "既有研究核對",
+    "REFRESH_FINANCIALS": "新財報核對與研究重建",
 }
 
 
@@ -108,7 +114,24 @@ class Product:
             self.store.observe("success:" + job["kind"], {"job_id": job["id"]}, finished)
         except Exception as exc:
             # Logs expose error class only: no credentials, arbitrary source text or paths.
-            self.store.finish(job, time.time() if now is None else now, error=type(exc).__name__)
+            error = (
+                exc.code
+                if isinstance(exc, financial_refresh.RefreshBlocked)
+                else type(exc).__name__
+            )
+            if job["kind"] == "REFRESH_FINANCIALS" and not isinstance(
+                exc, financial_refresh.RefreshBlocked
+            ):
+                self.store.observe(
+                    "financial_refresh",
+                    {
+                        "status": "blocked",
+                        "code": "unexpected_failure",
+                        "reason": "財報更新未完成，保留上一份正常研究；請查看更新紀錄。",
+                    },
+                    time.time(),
+                )
+            self.store.finish(job, time.time() if now is None else now, error=error)
         return job["id"]
 
     def _archive(self, raw: bytes) -> str:
@@ -136,6 +159,10 @@ class Product:
     def execute(self, job: dict, at: float):
         kind, payload = job["kind"], job["payload"]
         if kind == "VERIFY_RESEARCH":
+            previous = self.store.latest("research")
+            if previous and previous["payload"].get("database_ref"):
+                financial_refresh.verify_publication(self.store.root, previous["payload"])
+                return previous["id"]
             result = build_research(self.source_db, self.raw_dir)
             # Identical research does not become a new publication every refresh.
             identity = digest({k: v for k, v in result.items() if k != "verified_at"})
@@ -151,6 +178,68 @@ class Product:
                 message="已保存核對後的季度研究；AI 與未來目標價仍待驗收。",
             )
             self.store.enqueue("COLLECT_QUOTES", "quote-for-research:" + published, {}, at)
+            return published
+        if kind == "REFRESH_FINANCIALS":
+            releases = [
+                r["payload"]
+                for r in self.store.current("source_document", limit=200)
+                if r["payload"].get("status") == "parsed_pending_reconciliation"
+            ]
+            if not releases:
+                return None
+            article = max(releases, key=lambda r: (r["quarter"], r["received_at"]))
+            previous = self.store.latest("research")
+            saved = previous["payload"] if previous else None
+            if saved and article["quarter"] < saved["current"]["quarter"]:
+                return previous["id"]
+            try:
+                result = financial_refresh.rebuild(
+                    self.source_db, self.raw_dir, self.store.root, article, saved
+                )
+            except financial_refresh.RefreshBlocked as exc:
+                self.store.observe(
+                    "financial_refresh",
+                    {
+                        "status": "blocked",
+                        "quarter": article["quarter"],
+                        "reason": financial_refresh.REASONS[exc.code],
+                        "code": exc.code,
+                    },
+                    time.time(),
+                )
+                raise
+            if result is None:
+                self.store.observe(
+                    "financial_refresh",
+                    {
+                        "status": "unchanged_verified",
+                        "quarter": article["quarter"],
+                        "source_hash": article["source_hash"],
+                        "reason": "已核對最新公告，本季財務與假設未改變。",
+                    },
+                    time.time(),
+                )
+                return previous["id"] if previous else None
+            published = self.store.publish(
+                "research",
+                digest(result),
+                result,
+                time.time(),
+                pointer="research",
+                message=article["quarter"] + " 財務已核對，預測與估值已重新計算；AI 仍待驗收。",
+            )
+            self.store.observe(
+                "financial_refresh",
+                {
+                    "status": "rebuilt",
+                    "quarter": article["quarter"],
+                    "source_hash": article["source_hash"],
+                    "research_id": published,
+                    "reason": None,
+                },
+                time.time(),
+            )
+            self.store.enqueue("COLLECT_QUOTES", "quote-for-research:" + published, {}, time.time())
             return published
         if kind == "COLLECT_QUOTES":
             research = self.store.latest("research")
@@ -196,7 +285,7 @@ class Product:
             article = discovery.describe(raw, payload["url"], datetime.fromtimestamp(at, UTC))
             article["discovered_from_hash"] = payload["index_hash"]
             article["supersedes"] = previous["id"] if previous else None
-            return self.store.publish(
+            published = self.store.publish(
                 "source_document",
                 source_hash,
                 article,
@@ -205,13 +294,25 @@ class Product:
                 message="官方公告更新：" + article["title"],
                 alert_key="event:" + article["event_fingerprint"],
             )
+            if article["status"] == "parsed_pending_reconciliation":
+                self.store.enqueue(
+                    "REFRESH_FINANCIALS",
+                    f"financial:{article['event_fingerprint']}:{int(at // 3600)}",
+                    {},
+                    at,
+                )
+            return published
         raise ValueError("unsupported_product_job")
 
     def update(self):
         at = time.time()
         self.schedule(at)
-        for kind in ("COLLECT_QUOTES", "VERIFY_RESEARCH"):
+        for kind in ("COLLECT_QUOTES", "VERIFY_RESEARCH", "REFRESH_FINANCIALS"):
             self.store.enqueue(kind, f"manual:{kind}:{int(at // 30)}", {}, at)
+        for url in discovery.INDEXES:
+            self.store.enqueue(
+                "READ_INDEX", f"manual-index:{url}:{int(at // 30)}", {"url": url}, at
+            )
         result = self.load()
         result["refresh_queued"] = True
         return result
@@ -230,7 +331,7 @@ class Product:
         }
         return {
             "version": VERSION,
-            "mode": "research_shadow",
+            "mode": "financial_refresh",
             "deployment": self.deployment,
             "research_verified_at": datetime.fromtimestamp(verification["at"], UTC).isoformat()
             if verification
@@ -244,15 +345,21 @@ class Product:
                 {
                     **j,
                     "label": LABELS.get(j["kind"], "來源列表讀取"),
-                    "reason": reasons.get(j["kind"], "背景更新發生錯誤。") if j["error"] else None,
+                    "reason": (
+                        financial_refresh.REASONS.get(j["error"])
+                        or reasons.get(j["kind"], "研究重建未完成，保留上一版；請查看更新狀態。")
+                    )
+                    if j["error"]
+                    else None,
                 }
                 for j in jobs
             ],
             "ai_status": "pending_acceptance",
+            "financial_refresh": self.store.observation("financial_refresh"),
             "model_calls": 0,
             "formal_database_writes": 0,
             "notification_channel": "in_app",
-            "coverage": "NVIDIA 官方新聞與財報公告；尚未涵蓋所有 SEC 文件、法說 Q&A 與外部產業線索",
+            "coverage": "NVIDIA 官方公告與本季 SEC 財務核對；尚未涵蓋所有法說 Q&A 與外部產業線索",
         }
 
     def load(self):
@@ -268,6 +375,21 @@ class Product:
             {"id": row["id"], **{k: v for k, v in row["payload"].items() if k != "financials"}}
             for row in current_sources.values()
         ]
+        if research:
+            applied = research["payload"].get("financial_refresh", {}).get("source_hash")
+            refresh = (self.store.observation("financial_refresh") or {}).get("value", {})
+            for event in events:
+                if event.get("source_hash") == applied:
+                    event.update(
+                        status="research_rebuilt",
+                        model_impact="本季財務已核對，預測與估值已重建並保存。",
+                    )
+                elif refresh.get("status") == "unchanged_verified" and event.get(
+                    "source_hash"
+                ) == refresh.get("source_hash"):
+                    event.update(
+                        status="research_unchanged_verified", model_impact=refresh["reason"]
+                    )
         quote = (
             copy.deepcopy(quotes["payload"]) if quotes else {"status": "unavailable", "price": None}
         )
@@ -296,7 +418,7 @@ class Product:
             "alerts": self.store.alerts(),
             "target_valuation": target,
             "publication_status": "Partial" if research else "Updating",
-            "message": "背景正在取得股價、檢查官方公告並核對既有研究。",
+            "message": "背景正在更新股價、檢查官方財報；財務核對通過後會重建預測與估值。",
         }
         if not health["worker_running"]:
             result["publication_status"] = "Stale" if research else "Blocked"

@@ -72,7 +72,8 @@ def test_repeated_schedules_and_restart_do_not_duplicate_jobs(service):
     service.schedule(at)
     service.schedule(at)
     reopened = ProductStore(service.store.root)
-    assert len(reopened.jobs()) == 3
+    assert {j["kind"] for j in reopened.jobs()} == set(product.INTERVALS)
+    assert len(reopened.jobs()) == 4
     running = reopened.claim(at)
     assert running["attempts"] == 1
     reopened.recover(at + 1)
@@ -284,7 +285,9 @@ def test_manual_refresh_is_deduplicated_and_does_not_call_provider(service, monk
     first = service.update()
     service.update()
     assert first["refresh_queued"] is True
-    assert len(service.store.jobs()) == 5
+    assert len(service.store.jobs()) == 9
+    assert sum(j["kind"] == "READ_INDEX" for j in service.store.jobs()) == 2
+    assert sum(j["kind"] == "REFRESH_FINANCIALS" for j in service.store.jobs()) == 2
     assert first["operations"]["model_calls"] == 0
 
 
@@ -292,3 +295,79 @@ def test_product_store_cannot_overlap_source_database_or_raw_directory(tmp_path)
     for root in (tmp_path, tmp_path / "raw" / "nested"):
         with pytest.raises(ValueError, match="分開"):
             product.Product(tmp_path / "formal.db", tmp_path / "raw", root)
+
+
+def stage_financial(service, quarter="FY2027-Q3", source_hash="b" * 64):
+    article = {
+        "url": URL,
+        "quarter": quarter,
+        "received_at": datetime.now(UTC).isoformat(),
+        "status": "parsed_pending_reconciliation",
+        "source_hash": source_hash,
+    }
+    service.store.publish(
+        "source_document", source_hash, article, time.time(), pointer="source:" + URL
+    )
+    return article
+
+
+def test_financial_failure_preserves_published_research_and_price_channel(service, monkeypatch):
+    monkeypatch.setattr(product, "build_research", lambda *a: research())
+    saved = service.execute(job("VERIFY_RESEARCH"), time.time())
+    stage_financial(service)
+
+    def blocked(*a):
+        raise product.financial_refresh.RefreshBlocked("financial_conflict")
+
+    monkeypatch.setattr(product.financial_refresh, "rebuild", blocked)
+    with pytest.raises(ValueError, match="financial_conflict"):
+        service.execute(job("REFRESH_FINANCIALS"), time.time())
+    monkeypatch.setattr(product, "fetch_quote", lambda *a: quote("210"))
+    service.execute(job("COLLECT_QUOTES"), time.time())
+    loaded = service.load()
+    assert loaded["snapshot_id"] == saved
+    assert loaded["research"]["current"]["valuation"]["base"] == "250"
+    assert loaded["research"]["quote"]["price"] == "210"
+    assert loaded["operations"]["financial_refresh"]["value"]["code"] == "financial_conflict"
+
+
+def test_new_research_survives_restart_and_seed_rechecks(service, monkeypatch):
+    stage_financial(service)
+    next_result = research()
+    next_result["current"]["quarter"] = "FY2027-Q3"
+    next_result["database_ref"] = "c" * 64
+    next_result["financial_refresh"] = {"source_hash": "b" * 64}
+    monkeypatch.setattr(product.financial_refresh, "rebuild", lambda *a: next_result)
+    checked = []
+    monkeypatch.setattr(
+        product.financial_refresh,
+        "verify_publication",
+        lambda root, saved: checked.append(saved["database_ref"]),
+    )
+    saved = service.execute(job("REFRESH_FINANCIALS"), time.time())
+    reopened = product.Product(service.source_db, service.raw_dir, service.store.root)
+    assert reopened.execute(job("VERIFY_RESEARCH"), time.time()) == saved
+    assert checked == ["c" * 64]
+    assert reopened.load()["events"][0]["status"] == "research_rebuilt"
+    # A transport-only source revision must clear an old blocked observation,
+    # retain the research pointer, and show that unchanged finances were checked.
+    stage_financial(service, source_hash="d" * 64)
+    monkeypatch.setattr(product.financial_refresh, "rebuild", lambda *a: None)
+    service.store.observe(
+        "financial_refresh", {"status": "blocked", "reason": "old failure"}, time.time()
+    )
+    assert reopened.execute(job("REFRESH_FINANCIALS"), time.time()) == saved
+    loaded = reopened.load()
+    assert loaded["events"][0]["status"] == "research_unchanged_verified"
+    assert loaded["operations"]["financial_refresh"]["value"]["status"] == "unchanged_verified"
+    assert len(reopened.store.history("research")) == 1
+
+
+def test_old_quarter_never_rolls_back_current_research(service, monkeypatch):
+    service.store.publish("research", "newer", research(), 1, pointer="research")
+    stage_financial(service, quarter="FY2027-Q1")
+    monkeypatch.setattr(
+        product.financial_refresh, "rebuild", lambda *a: pytest.fail("Old quarter must not rebuild")
+    )
+    service.execute(job("REFRESH_FINANCIALS"), time.time())
+    assert len(service.store.history("research")) == 1

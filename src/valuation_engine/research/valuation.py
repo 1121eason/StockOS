@@ -59,12 +59,28 @@ def positive_ratio(top, bottom):
 
 
 def build_valuation(db, run):
-    if run.forecast_type != "first_tradable":
+    return _build_valuation(db, run, live=False)
+
+
+def build_live_valuation(db, run):
+    """Use the unchanged financial DCF policy; never read the quote channel."""
+    return _build_valuation(db, run, live=True)
+
+
+def _build_valuation(db, run, *, live):
+    if run.forecast_type != ("live" if live else "first_tradable"):
         raise ValueError("Historical valuation requires first-tradable forecast")
     data = FinancialInputs(db, run.company_id, run.information_cutoff)
-    if run.information_cutoff != data.tradable_at:
+    if live and (
+        run.information_cutoff != run.forecast_as_of
+        or run.metadata_json["anchor"] != f"FY{data.anchor[0]}-Q{data.anchor[1]}"
+    ):
+        raise ValueError("Live valuation checkpoint or fiscal anchor mismatch")
+    if not live and run.information_cutoff != data.tradable_at:
         raise ValueError("Valuation must use exact primary trade checkpoint")
-    base = historical_value_at(db, data.repo, data.current, run.forecast_as_of)
+    base = historical_value_at(
+        db, data.repo, data.current, run.forecast_as_of, include_market=not live
+    )
     periods = stored_periods(db, run.id)
     horizons = {r["period_type"]: r for r in periods if r["period_type"] != "quarter"}
     ntm = horizons["NTM"]

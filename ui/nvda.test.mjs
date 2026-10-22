@@ -53,3 +53,12 @@ test('cloud deployment label and newest announcement order follow the API',async
  const d=fixture();Object.assign(d,{operations:{deployment:'cloud',worker_running:true,coverage:'synthetic',jobs:[]},publication_status:'Partial',events:[{title:'Older item',url:'https://example.com/old',publication_date:'2026-01-01'},{title:'Newer item',url:'https://example.com/new',publication_date:'2026-10-21'}],alerts:[]});
  const a=await app(()=>d);try{assert.match(a.doc.querySelector('#environment-label').textContent,/雲端/);assert.match(a.doc.querySelector('#operations').textContent,/不受個人電腦關機影響/);assert.match(a.doc.querySelector('#operations a').textContent,/Newer item/);}finally{a.dom.window.close();}
 });
+test('financial refresh failure leaves model price visible and explains the blocked source',async()=>{
+ const d=fixture();Object.assign(d,{operations:{mode:'financial_refresh',worker_running:true,coverage:'synthetic',jobs:[],financial_refresh:{value:{status:'blocked',quarter:'FY2027-Q3',reason:'公司公告與 SEC 數字不一致，需人工核對。'}}},publication_status:'Partial',events:[],alerts:[]});
+ const a=await app(()=>d);try{assert.match(a.doc.querySelector('#model-price').textContent,/250.00/);assert.match(a.doc.querySelector('#operations').textContent,/SEC 數字不一致/);assert.match(a.doc.querySelector('#evidence').textContent,/失敗時保留上一版/);assert.match(a.doc.body.textContent,/AI 不修改估值/);}finally{a.dom.window.close();}
+});
+
+test('live forecast comparison does not require a legacy revision ID',async()=>{
+ const d=fixture();d.research.revisions.forEach(r=>{delete r.revision_id;r.forecast_run_id=123;r.previous_run_id=122;});
+ const a=await app(()=>d);try{assert.doesNotMatch(a.doc.querySelector('#revision-result').textContent,/NaN|undefined/);assert.match(a.doc.querySelector('#revision-result').textContent,/來源與限制/);}finally{a.dom.window.close();}
+});

@@ -14,6 +14,7 @@ services:
     environment:
       STOCKOS_PUBLIC_ORIGIN: https://${STOCKOS_DOMAIN:?Set your HTTPS hostname}
       STOCKOS_DEPLOYMENT: cloud
+      SEC_USER_AGENT: ${SEC_USER_AGENT:?Set the SEC download project name and contact email}
     volumes:
       - type: bind
         source: ${STOCKOS_SEED_DIR:?Set the verified seed directory}

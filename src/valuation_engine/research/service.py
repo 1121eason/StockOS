@@ -282,6 +282,20 @@ def revisions(db, run):
     )
     if previous is None:
         return {"status": "no_previous_forecast"}
+    return compare_forecasts(db, run, previous)
+
+
+def compare_forecasts(db, run, previous):
+    """Compare identical fiscal targets with an explicitly selected prior quarter."""
+    if (
+        previous.company_id != run.company_id
+        or previous.forecast_as_of >= run.forecast_as_of
+        or previous.information_cutoff > run.information_cutoff
+        or previous.model_name != run.model_name
+        or previous.model_version != run.model_version
+        or previous.assumption_set_id != run.assumption_set_id
+    ):
+        raise ValueError("Forecast comparison requires a prior matching model and policy")
     key = digest([previous.identity_key, run.identity_key, "ForecastRevisionV1"])
     oldrow = db.scalar(select(ForecastRevision).where(ForecastRevision.identity_key == key))
     if oldrow:

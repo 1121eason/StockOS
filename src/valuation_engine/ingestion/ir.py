@@ -331,7 +331,14 @@ def parse_release(content: bytes, fy: int, fq: int) -> dict[str, Any]:
 
 
 def ingest_release(
-    db: Session, settings: Settings, content: bytes, url: str, fy: int, fq: int
+    db: Session,
+    settings: Settings,
+    content: bytes,
+    url: str,
+    fy: int,
+    fq: int,
+    *,
+    observed_at: datetime | None = None,
 ) -> dict[str, int]:
     parsed = parse_release(content, fy, fq)
     co = company(db)
@@ -350,9 +357,12 @@ def ingest_release(
             "availability_policy": "next_midnight_ET_upper_bound",
             "fiscal_year": fy,
             "fiscal_quarter": fq,
+            **({"product_observed_at": observed_at.isoformat()} if observed_at else {}),
         },
     )
     available = parsed["available"]
+    if doc.metadata_json.get("product_observed_at"):
+        available = max(available, datetime.fromisoformat(doc.metadata_json["product_observed_at"]))
     if doc.metadata_json.get("changed_content"):
         available = max(available, doc.retrieved_at)
     issue(

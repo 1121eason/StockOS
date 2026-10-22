@@ -85,7 +85,7 @@ def verified_sources(db: Session, ids: set[int], raw_dir: Path) -> list[dict]:
         if not raw.is_file() or raw.is_symlink() or file_hash(raw) != doc.content_hash:
             raise ValueError(f"來源文件 {source_id} 的原始內容缺失或雜湊不符。")
         host = urlsplit(doc.source_url).hostname
-        official = host in ("nvidianews.nvidia.com", "www.sec.gov", "sec.gov")
+        official = host in ("nvidianews.nvidia.com", "www.sec.gov", "sec.gov", "data.sec.gov")
         time_records = list(
             db.scalars(
                 select(AvailabilityEvidence)
@@ -183,6 +183,12 @@ def quarter_data(db: Session, path: Path, run) -> tuple[dict, set[int], Any]:
     formal = load_formal_context(
         path, "NVDA", quarter, run.forecast_as_of.date().isoformat(), run.forecast_as_of
     )
+    return quarter_values(db, run, formal)
+
+
+def quarter_values(db: Session, run, formal) -> tuple[dict, set[int], Any]:
+    """Verify a selected cohort's financial values using the unchanged normalizer."""
+    quarter = run.metadata_json["anchor"]
     valuation_metadata = json.loads(formal.metadata_json)
     snapshot = db.get(QuarterlySnapshot, run.input_snapshot_id)
     if snapshot is None or snapshot.company_id != run.company_id:
