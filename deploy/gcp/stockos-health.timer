@@ -1,0 +1,9 @@
+[Unit]
+Description=Check StockOS worker every five minutes
+
+[Timer]
+OnBootSec=300
+OnUnitActiveSec=300
+
+[Install]
+WantedBy=timers.target

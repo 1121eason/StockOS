@@ -1,0 +1,17 @@
+# Merge with deploy/compose.yaml; paths are relative to that first compose file.
+volumes:
+  research:
+    driver_opts:
+      type: none
+      o: bind
+      device: /srv/stockos/research
+  tls:
+    driver_opts:
+      type: none
+      o: bind
+      device: /srv/stockos/tls
+  caddy_config:
+    driver_opts:
+      type: none
+      o: bind
+      device: /srv/stockos/caddy_config

@@ -20,6 +20,10 @@ node_modules/
 .env.*
 !.env.example
 /deploy/runtime/
+/deploy/gcp/.terraform/
+/deploy/gcp/*.tfstate*
+/deploy/gcp/*.tfvars
+/deploy/gcp/*.tfplan
 
 # Machine-specific UI notes must remain local
 /LOCAL_UI_USAGE.md

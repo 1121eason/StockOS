@@ -1,0 +1,9 @@
+[Unit]
+Description=Check StockOS worker and recover within a bounded limit
+After=stockos.service
+RequiresMountsFor=/srv/stockos
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/stockos-health-watch
+TimeoutStartSec=120
