@@ -259,7 +259,7 @@ class Product:
         research = self.store.latest("research")
         quotes = self.store.latest("quote")
         health = self.health()
-        sources = self.store.history("source_document")
+        sources = self.store.current("source_document")
         # One current version per URL; history is retained separately.
         current_sources: dict[str, Any] = {}
         for row in sources:

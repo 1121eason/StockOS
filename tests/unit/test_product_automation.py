@@ -204,6 +204,24 @@ def test_published_artifact_tampering_is_rejected(service):
         service.load()
 
 
+def test_many_revisions_of_one_announcement_do_not_hide_other_current_documents(service):
+    other = "https://nvidianews.nvidia.com/news/other-announcement"
+    first = service.store.publish(
+        "source_document", "other", {"url": other, "title": "Other"}, 0, pointer="source:" + other
+    )
+    for version in range(55):
+        latest = service.store.publish(
+            "source_document",
+            str(version),
+            {"url": URL, "title": str(version)},
+            version + 1,
+            pointer="source:" + URL,
+        )
+    events = service.load()["events"]
+    assert {event["id"] for event in events} == {first, latest}
+    assert len(service.store.history("source_document")) == 40
+
+
 @pytest.mark.parametrize(
     "url",
     [

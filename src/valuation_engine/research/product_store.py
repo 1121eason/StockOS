@@ -202,6 +202,16 @@ class ProductStore:
             ).fetchall()
         return [self._artifact(row) for row in rows]
 
+    def current(self, kind: str, limit=40):
+        """Limit current documents, not historical revisions of the same document."""
+        with self.connect() as db:
+            rows = db.execute(
+                "SELECT DISTINCT a.* FROM artifacts a JOIN pointers p ON p.artifact_id=a.id "
+                "WHERE a.kind=? ORDER BY a.created DESC,a.rowid DESC LIMIT ?",
+                (kind, limit),
+            ).fetchall()
+        return [self._artifact(row) for row in rows]
+
     def jobs(self, limit=30):
         with self.connect() as db:
             rows = db.execute(
