@@ -74,6 +74,9 @@ def test_seed_copy_publishes_only_after_same_research_reconciles(seed, tmp_path,
         "revisions": [],
     }
     monkeypatch.setattr(deployment, "build_research", lambda *a: research)
+    monkeypatch.setattr(
+        deployment, "refresh_source_hashes", lambda *a: set(manifest["source_hashes"])
+    )
     output = tmp_path / "copy"
     result = deployment.prepare_seed(folder / "qve.db", folder / "raw", output)
     assert deployment.verify_seed(output) == result
@@ -96,6 +99,9 @@ def test_failed_reconciliation_never_publishes_seed(seed, tmp_path, monkeypatch)
         }
 
     monkeypatch.setattr(deployment, "build_research", build)
+    monkeypatch.setattr(
+        deployment, "refresh_source_hashes", lambda *a: set(manifest["source_hashes"])
+    )
     output = tmp_path / "rejected"
     with pytest.raises(ValueError, match="research_mismatch"):
         deployment.prepare_seed(folder / "qve.db", folder / "raw", output)

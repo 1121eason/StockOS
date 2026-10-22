@@ -1,6 +1,6 @@
 # NVDA 背景研究與雲端部署
 
-本階段運行行情、官方公告收集、財報解析待對帳及既有研究核對。AI、全新財報自動重估、未來目標價尚未啟用。啟動前準備可信研究 seed；空白 clone 不會補入示範資料。
+本階段運行行情、官方公告收集、SEC 財務核對，以及預測、營運階段與研究日合理價值重建。AI 與 12 個月目標價仍待驗收。啟動前準備可信研究 seed；空白 clone 不會補入示範資料。
 
 ## 本機
 
@@ -12,9 +12,13 @@ uv run python scripts/serve_ui.py --port 8511 --automation \
   --product-store data/nvda-product
 ```
 
-開啟 `http://127.0.0.1:8511/nvda`。背景每 5 分鐘抓行情、每小時檢查官方來源、每 6 小時核對既有研究。瀏覽器每 15 秒更新狀態。手動按鈕只排入工作，不接受股票、資料庫路徑或財務模型參數。
+開啟 `http://127.0.0.1:8511/nvda`。背景每 5 分鐘抓行情、每小時檢查官方來源與待更新財報、每 6 小時核對已保存研究。瀏覽器每 15 秒更新狀態。手動按鈕只排入工作，不接受股票、資料庫路徑或財務模型參數。
 
-產品狀態獨立保存於 `operations.sqlite` 與 `raw/`。程序鎖只允許一個 worker 使用同一儲存區；工作最多嘗試 3 次，重啟不歸零。不要在 NFS、多個副本或短暫容器檔案系統上共用此 SQLite。此版本使用單一持久主機；高可用與多節點需另外採用伺服器資料庫和分散式工作租約。
+產品狀態獨立保存於 `operations.sqlite`、`raw/` 與 `research/<sha256>.sqlite`。SEC 下載需設定 `SEC_USER_AGENT`（專案名稱與聯絡信箱），缺少設定或下載失敗時保留上一版研究並顯示原因。
+
+新公告的營收、營業利益、淨利、營運現金流與資本支出必須與原始 SEC 財報相符，才使用既有財務公式重建；SEC 累計數字沿用既有單季還原規則。來源取得時間如實記錄，新資料不倒填為歷史已知。核對或計算失敗不移動發布指標。同季財務／指引更正須人工核對；只有 HTML 包裝變動而財務不變時，不重複發布。重建目前只支援連續季度，缺少上一季會停止。
+
+程序鎖只允許一個 worker 使用同一儲存區；工作最多嘗試 3 次，重啟不歸零。不要在 NFS、多個副本或短暫容器檔案系統上共用此 SQLite。此版本使用單一持久主機；高可用與多節點需另外採用伺服器資料庫和分散式工作租約。
 
 ## 建置與 seed
 
@@ -25,7 +29,7 @@ uv run python scripts/prepare_product_seed.py \
   --out /absolute/path/new-private-seed
 ```
 
-資料包包含現有研究 DB 的完整複本與兩季工作台實際引用的原件。DB 保留既有歷史 AI 紀錄；匯出不批准、重用或重新驗收這些紀錄。工具要求目標為新目錄，核對來源及複本，再原子完成資料包。`seed-manifest.json` 綁定 DB／raw hashes；啟動時再次檢查。這是私有部署資料，不是程式碼或容器映像檔。原始來源不寫入、不遷移，不複製本機登入檔或環境設定。只傳送至使用者指定的私有部署位置。
+資料包包含現有研究 DB 的完整複本、兩季工作台原件及後續重建需要的 NVDA SEC／IR 原件（含較早期指引）。DB 保留既有歷史 AI 紀錄；匯出不批准、重用或重新驗收這些紀錄。工具要求目標為新目錄，核對來源及複本，再原子完成資料包。`seed-manifest.json` 綁定 DB／raw hashes；啟動時再次檢查。這是私有部署資料，不是程式碼或容器映像檔。原始來源不寫入、不遷移，不複製本機登入檔或環境設定。只傳送至使用者指定的私有部署位置。
 
 映像只包含程式與鎖定相依套件；建置 context 使用 `.dockerignore` 白名單。正式部署使用建置後的 image digest，記錄 CPU 架構及基礎映像 digest。沒有正式 push／部署程序或預設雲端專案。
 
@@ -41,7 +45,7 @@ uv run python scripts/prepare_product_seed.py \
 
 先確定使用者指定的雲端專案、預算、域名與登入方式。若使用既有 Google／組織身分入口，可將 Caddy 帳密入口替換為受控認證代理；不得直接公開 app port。
 
-在目標主機複製 `deploy/.env.example` 為未追蹤的 `.env`，填入已測 image digest、已核對 seed 目錄、專用網域與登入資料。Caddy 密碼雜湊以互動方式建立，不把密碼貼進文件、日誌或提交。`.env` 權限應限制於管理者。
+在目標主機複製 `deploy/.env.example` 為未追蹤的 `.env`，填入已測 image digest、已核對 seed 目錄、專用網域、登入資料與 SEC 下載聯絡設定。Caddy 密碼雜湊以互動方式建立，不把密碼貼進文件、日誌或提交。`.env` 權限應限制於管理者。
 
 ```sh
 docker compose --env-file deploy/.env -f deploy/compose.yaml config --quiet
@@ -61,7 +65,7 @@ uv run python scripts/product_backup.py restore \
   --source /absolute/path/new-backup --out /absolute/path/new-restored-state
 ```
 
-備份使用 SQLite 一致快照，只收錄該快照引用的不可變原件。驗證 DB integrity、schema、artifact hashes、pointer 與 raw hashes。還原必須到新目錄，不覆蓋運行中的資料；先驗證再切換停機後的 volume。中斷工作將由取得 worker lock 的程序接續，嘗試次數保留。
+備份使用 SQLite 一致快照，收錄該快照引用的不可變原件與新建研究資料庫。驗證 DB integrity、schema、artifact hashes、pointer 與 raw hashes。還原必須到新目錄，不覆蓋運行中的資料；先驗證再切換停機後的 volume。中斷工作將由取得 worker lock 的程序接續，嘗試次數保留。
 
 此工具不自行上傳、刪除舊資料或建立備份排程。部署時須將通過驗證的備份保存至使用者指定的獨立位置，並實際測試從該位置還原。
 
@@ -70,7 +74,7 @@ uv run python scripts/product_backup.py restore \
 | 介面 | 用途 |
 |---|---|
 | `GET /api/nvda` | 原子研究 snapshot、獨立報價、事件、提醒與狀態 |
-| `POST /api/nvda/update` | 空 JSON，排入行情與既有研究核對 |
+| `POST /api/nvda/update` | 空 JSON，排入行情、官方來源檢查與財報重建；完成檢查後才發布 |
 | `GET /api/operations/health` | worker、近期工作、錯誤及資格狀態 |
 | `GET /api/operations/history` | 最近研究與來源版本，不含全部歷史分頁 |
 | `GET /api/operations/artifact?id=…` | 依 immutable ID 讀取與核對單一紀錄 |

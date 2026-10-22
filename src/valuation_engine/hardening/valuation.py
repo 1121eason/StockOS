@@ -14,7 +14,12 @@ from valuation_engine.time import ET, aware, calculate_next_tradable_timestamp
 
 
 def historical_value_at(
-    db: Session, repo: PointInTimeRepository, q: Quarter, as_of: datetime
+    db: Session,
+    repo: PointInTimeRepository,
+    q: Quarter,
+    as_of: datetime,
+    *,
+    include_market: bool = True,
 ) -> ValuationSnapshot:
     from valuation_engine.valuation.ratios import basic_ratios
 
@@ -22,7 +27,11 @@ def historical_value_at(
     if q.as_of != at:
         raise ValueError("Valuation snapshot cutoff mismatch")
     first_trade = calculate_next_tradable_timestamp(max(o.available_at for o in q.metrics.values()))
-    marks = [get_price_as_reported(db, q.company_id, at, field) for field in ("open", "close")]
+    marks = (
+        [get_price_as_reported(db, q.company_id, at, field) for field in ("open", "close")]
+        if include_market
+        else []
+    )
     eligible_marks = [mark for mark in marks if mark and mark["available_at"] >= first_trade]
     quote = max(eligible_marks, key=lambda mark: mark["available_at"]) if eligible_marks else None
     split = SplitBasis(db, q.company_id)

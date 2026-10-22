@@ -34,6 +34,15 @@ def payload(policy):
 
 
 def replay(db, company_id, cutoff, policy=POLICY):
+    return replay_runs(db, company_id, eligible_runs(db, company_id, cutoff), policy)
+
+
+def replay_runs(db, company_id, runs, policy=POLICY, *, allow_live=False):
+    """Shared classifier; product callers must supply one chronological run per quarter."""
+    if allow_live:
+        anchors = [r.metadata_json["anchor"] for r in runs]
+        if anchors != sorted(set(anchors)) or any(r.company_id != company_id for r in runs):
+            raise ValueError("Live regime requires unique chronological fiscal quarters")
     assumptions = payload(policy)
     key = digest(assumptions)
     assumption = db.scalar(select(AssumptionSet).where(AssumptionSet.content_hash == key))
@@ -41,7 +50,6 @@ def replay(db, company_id, cutoff, policy=POLICY):
         assumption = AssumptionSet(content_hash=key, assumptions=assumptions)
         db.add(assumption)
         db.flush()
-    runs = eligible_runs(db, company_id, cutoff)
     if not runs:
         raise ValueError("No eligible formal M2 first-tradable forecasts; run M2 first")
     states: list[dict] = []
@@ -52,10 +60,10 @@ def replay(db, company_id, cutoff, policy=POLICY):
             from valuation_engine.regime.confidence import classify_corrected
             from valuation_engine.regime.lineage import extract_corrected
 
-            pack = extract_corrected(db, run, runs[:index], policy)
+            pack = extract_corrected(db, run, runs[:index], policy, allow_live=allow_live)
             state = classify_corrected(pack, states, policy)
         else:
-            pack = extract(db, run, runs[:index], policy)
+            pack = extract(db, run, runs[:index], policy, allow_live=allow_live)
             state = classify(pack, states, policy)
         prior = records[-1] if records else None
         identity = digest(

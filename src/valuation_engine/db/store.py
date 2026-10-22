@@ -17,9 +17,17 @@ def digest(value: Any) -> str:
     return hashlib.sha256(json.dumps(value, sort_keys=True, default=str).encode()).hexdigest()
 
 
-def read_document(source: SourceDocument, raw_dir: Path | None = None) -> bytes:
+def read_document(
+    source: SourceDocument, raw_dir: Path | None = None, *, strict_root=False
+) -> bytes:
     """Read immutable evidence; relocated bundles resolve by hash without rewriting provenance."""
     path = Path(source.raw_path)
+    if strict_root:
+        if raw_dir is None:
+            raise ValueError("Explicit raw directory required")
+        path = raw_dir / source.content_hash
+        if path.is_symlink() or not path.is_file():
+            raise ValueError("Isolated source content missing")
     if not path.is_file():
         path = (raw_dir if raw_dir is not None else Settings().qve_raw_dir) / source.content_hash
     content = path.read_bytes()

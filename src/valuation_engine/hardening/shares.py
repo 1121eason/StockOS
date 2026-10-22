@@ -287,6 +287,10 @@ def ingest_structured_shares(
 ) -> dict[str, Any]:
     split = SplitBasis(db, filing.company_id)
     published, available, meta = filing_availability(filing)
+    if source.metadata_json.get("product_observed_at"):
+        available = max(
+            available, datetime.fromisoformat(source.metadata_json["product_observed_at"])
+        )
     made = skipped = 0
     rejected = []
     for item in values:

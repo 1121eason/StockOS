@@ -38,9 +38,15 @@ def eligible_runs(db, company_id, cutoff):
     return rows
 
 
-def extract(db, run, previous_runs, policy, context=None):
+def extract(db, run, previous_runs, policy, context=None, *, allow_live=False):
     data = FinancialInputs(db, run.company_id, run.information_cutoff)
-    if run.forecast_as_of != data.tradable_at:
+    live = allow_live and run.forecast_type == "live"
+    if live and (
+        run.forecast_as_of != run.information_cutoff
+        or run.metadata_json["anchor"] != period_name(*data.anchor)
+    ):
+        raise ValueError("Live regime checkpoint or fiscal anchor mismatch")
+    if not live and run.forecast_as_of != data.tradable_at:
         raise ValueError("Regime requires the actual first-tradable forecast")
     actuals = [actual_period(data, q) for q in data.history]
     cur, prior, year = actuals[0], actuals[1], actuals[4]

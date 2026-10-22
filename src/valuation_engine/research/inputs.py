@@ -115,7 +115,11 @@ class FinancialInputs:
                 assert doc is not None
                 if doc.source_provider == "NVIDIA IR":
                     parsed = parse_release(
-                        read_document(doc),
+                        read_document(
+                            doc,
+                            self.db.info.get("research_raw_dir"),
+                            strict_root="research_raw_dir" in self.db.info,
+                        ),
                         doc.metadata_json["fiscal_year"],
                         doc.metadata_json["fiscal_quarter"],
                     )
