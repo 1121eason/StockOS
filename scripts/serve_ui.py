@@ -289,6 +289,8 @@ def main() -> None:
     parser.add_argument("--research-store", type=Path, help="Explicit isolated research SQLite file; read-only UI")
     parser.add_argument("--source-db", type=Path, help="Explicit NVDA formal source; read only, never migrated")
     parser.add_argument("--raw-dir", type=Path, help="Explicit content-hashed source directory")
+    parser.add_argument("--ai-candidate", type=Path,
+                        help="Read-only, unapproved AI explanation JSON; never invokes a model")
     parser.add_argument("--workbench-store", type=Path, default=ROOT / "data/nvda-workbench",
                         help="Separate local immutable research snapshots")
     parser.add_argument("--open-browser", action="store_true", help="Open the local page after startup")
@@ -304,6 +306,8 @@ def main() -> None:
         parser.error("port 須介於 1024 與 65535")
     if args.automation and (not args.source_db or not args.raw_dir):
         parser.error("背景更新需要 --source-db 與 --raw-dir")
+    if args.ai_candidate and (not args.source_db or not args.raw_dir):
+        parser.error("AI 候選檢視需要 --source-db 與 --raw-dir")
     if args.public_origin:
         try:
             validate_proxy_origin(args.public_origin)
@@ -326,12 +330,13 @@ def main() -> None:
             from valuation_engine.research.product import Product
 
             server.workbench = Product(args.source_db, args.raw_dir, args.product_store,
-                                       deployment=args.deployment)
+                                       deployment=args.deployment, ai_candidate=args.ai_candidate)
             server.workbench.start()
         else:
             from valuation_engine.research.workbench import Workbench
 
-            server.workbench = Workbench(args.source_db, args.raw_dir, args.workbench_store)
+            server.workbench = Workbench(args.source_db, args.raw_dir, args.workbench_store,
+                                         ai_candidate=args.ai_candidate)
     mode = "NVDA 研究工作台" if server.workbench else "示範工作區"
     print(f"StockOS {mode}：http://127.0.0.1:{args.port}\nCtrl+C 停止；正式來源僅唯讀，更新只保存獨立工作台快照。不呼叫 AI 模型。", flush=True)
     if args.open_browser:

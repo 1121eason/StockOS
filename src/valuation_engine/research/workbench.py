@@ -34,6 +34,7 @@ from valuation_engine.regime.features import eligible_runs
 from valuation_engine.research.dcf import DCFModel
 from valuation_engine.research.market_quote import compare_price, fetch_quote
 from valuation_engine.research.numbers import POLICY, MarketEquityShares, canonical
+from valuation_engine.research.synthesis import attach_synthesis
 from valuation_engine.time import aware
 
 METRICS = ("revenue", "operating_income", "net_income", "eps_diluted", "ocf", "capex", "fcf")
@@ -304,7 +305,10 @@ def build_research(path: Path, raw_dir: Path) -> dict:
 
 
 class Workbench:
-    def __init__(self, source_db: Path, raw_dir: Path, store: Path):
+    def __init__(
+        self, source_db: Path, raw_dir: Path, store: Path, *, ai_candidate: Path | None = None
+    ):
+        self.ai_candidate = ai_candidate
         self.source_db, self.raw_dir, self.store = (
             source_db.resolve(),
             raw_dir.resolve(),
@@ -329,7 +333,9 @@ class Workbench:
             raise ValueError("研究快照雜湊不符。")
         return {
             "snapshot_id": identity,
-            "research": json.loads(path.read_text()),
+            "research": attach_synthesis(
+                json.loads(path.read_text()), candidate_path=self.ai_candidate, raw_dir=self.raw_dir
+            ),
             "last_attempt": self.last_attempt,
         }
 

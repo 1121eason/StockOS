@@ -33,3 +33,7 @@ node_modules/
 *.sqlite-*
 *.sqlite3
 *.sqlite3-*
+
+# 產生的執行結果只留在本機（2026-11-06）
+outputs/
+reports/

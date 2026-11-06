@@ -17,6 +17,7 @@ from typing import Any, TextIO
 from valuation_engine.research import discovery, financial_refresh
 from valuation_engine.research.market_quote import compare_price, fetch_quote
 from valuation_engine.research.product_store import ProductStore, digest
+from valuation_engine.research.synthesis import attach_synthesis
 from valuation_engine.research.workbench import build_research
 
 VERSION = "NVDAProductRefreshV2"
@@ -36,7 +37,16 @@ LABELS = {
 
 
 class Product:
-    def __init__(self, source_db: Path, raw_dir: Path, store: Path, *, deployment: str = "local"):
+    def __init__(
+        self,
+        source_db: Path,
+        raw_dir: Path,
+        store: Path,
+        *,
+        deployment: str = "local",
+        ai_candidate: Path | None = None,
+    ):
+        self.ai_candidate = ai_candidate
         if deployment not in ("local", "cloud"):
             raise ValueError("unsupported_deployment")
         self.deployment = deployment
@@ -432,7 +442,12 @@ class Product:
                 comparison = compare_price(data["current"]["valuation"], quote)
             # Existing verified research stays intact; quote channel is explicit and separate.
             data.update(quote=quote, price_comparison=comparison)
-            result["research"] = data
+            result["research"] = attach_synthesis(
+                data,
+                candidate_path=self.ai_candidate,
+                raw_dir=self.raw_dir,
+                supplemental_raw_dir=self.store.root / "raw",
+            )
             cutoff = datetime.fromisoformat(data["current"]["checkpoint"])
             if time.time() - cutoff.timestamp() > 120 * 86400:
                 result["publication_status"] = "Stale"
