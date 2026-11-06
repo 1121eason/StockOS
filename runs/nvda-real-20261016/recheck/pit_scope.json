@@ -1,0 +1,18 @@
+{
+  "comparison_rows": 20251,
+  "unique_quarter_check_timestamp_cutoff_tuples": 5701,
+  "all_row_comparisons_true": true,
+  "categories": {
+    "financial": 2620,
+    "guidance": 52,
+    "guidance_actual": 312,
+    "guidance_origin": 312,
+    "interval_actual": 8250,
+    "interval_origin": 8250,
+    "valuation": 234,
+    "shares": 13,
+    "price": 13,
+    "prior_context": 195
+  },
+  "scope": "Saved metadata availability/cutoff comparisons and prior-origin strict ordering. Repeated calibration samples are not independent evidence. Does not establish contemporaneous model/price vintage, authentic historical signal generation, approval/admission or source authenticity by itself."
+}

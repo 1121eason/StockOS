@@ -1,0 +1,19 @@
+{
+  "status": "INCOMPLETE_REVISION_CONTEXT",
+  "recommended_equity_weight": null,
+  "recommended_cash_weight": null,
+  "revision_context": null,
+  "audit_log": [
+    "Starting Quarterly Cadence Pipeline for NVDA FY2025-Q2 (As of 2024-08-29)",
+    "Mode: DRY-RUN (No database mutations will be committed).",
+    "Stage 1: Formal database exists; no new filing ingestion was performed.",
+    "Stage 2: Reading stored formal inputs; normalization and YTD differencing were not rerun.",
+    "Forecast revision: UNAVAILABLE; target=None; reason=fiscal_target_not_selected",
+    "Stage 3 PASS: Quant Baseline DCF = $70.72, Market Price = $121.36, Quant Gap = -41.7%",
+    "Reverse DCF Implied Growth: 44.4%",
+    "Stage 4: Legacy AI candidate inputs quarantined; exact-run admission and approval contracts are unavailable.",
+    "Human Review Gate: PENDING. Global review counts do not approve this candidate.",
+    "Decision withheld: a complete, explicitly selected same-target forecast revision is unavailable. Missing revisions are not zero-change signals.",
+    "Stage 7: DRY-RUN complete. Execution receipt generated without database mutation."
+  ]
+}

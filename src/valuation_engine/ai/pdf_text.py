@@ -26,7 +26,16 @@ def paragraphs(content, transcript=False):
         def flush(active, speaker, buffer=buffer, page_no=page_no):
             value = " ".join(buffer).strip()
             if active and len(value) > 35:
-                output.append({"section": f"PDF page {page_no}", "text": value, "speaker": speaker})
+                output.append(
+                    {
+                        "section": f"PDF page {page_no}",
+                        "text": value,
+                        "speaker": speaker,
+                        "speaker_role": "NVIDIA management"
+                        if transcript and speaker and active
+                        else None,
+                    }
+                )
             buffer.clear()
 
         for i, line in enumerate(lines):

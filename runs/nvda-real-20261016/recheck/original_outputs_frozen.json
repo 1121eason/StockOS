@@ -1,0 +1,33 @@
+{
+  "original_output_hashes": {
+    "outputs/metrics.json": "0fc6eab1259627a421484ab09f8cc83c19bc764fdd249858a985bd674088963c",
+    "outputs/canonical_tests.txt": "940f297a35039646533afe61df48ce5c586ccad1370fd532a590c138d80ebbbd",
+    "outputs/runtime.json": "def38d06cd7f207347998c59b80fe759874006b4be9dca525938c70c4c52ef36",
+    "outputs/REPORT.zh-TW.md": "2d62ac3db7cef823ba5da68ec0fefd31fdd1d4aac0976f014bea0c76010a975a",
+    "outputs/formal_cadence_guard.json": "afdf066e3c726438232b136587aec00a367343403af43456208b7ca4abbc9143",
+    "outputs/source_manifest.json": "8f239c6eab20e148f31f0c519049c10285892585b008082d532bb9e21275bffb",
+    "outputs/trade_ledger.csv": "d440cacf668d3ecec113647fddb21913a6cbfec86fe0bf4279fadfe8c85ad508",
+    "outputs/run.log": "4a1cb9e922ace7fb85f6a379022d816d2ad873cdbc08be5256292a6ee7a55f63",
+    "outputs/forecast_periods.csv": "70d9e49013c41740ccc828daa489836e3976c3fd090ec586dbd1ad310a73e0d6",
+    "outputs/valuation_provenance.json": "74e8cf366605e78464bb19450d5056d1a29afbe968b0f9552f7515dd4d149238",
+    "outputs/nav_chart.html": "0f3b3066ebd28d1f95bfa65d0ef6ec71c3eebaccf9cde4a2e8a02bc79df612a2",
+    "outputs/usage_and_ui.json": "91a14358342312ba319e3bb6d8dc9c1243f876bce1eaeee218a6f26a372b8112",
+    "outputs/preservation.json": "1efbcd3b11c3e5cfc7241e0719403599ff463b293051ca89b8e7ebbf02752645",
+    "outputs/metrics.csv": "71db9ce7af7e38119c73037292976eaf22c9e08d981a7b298fc0c8977b77ea81",
+    "outputs/prices.csv": "54ea260df282eb5768447df79d7714a9a23117dc7960f2f26bbd234101f75f2f",
+    "outputs/valuation_reconciliation.json": "980187189b1ce5e14ed2aff4bbfcae8ab9e0584b6fea6ce7e17d5910ddd4b28b",
+    "outputs/forecast_lineage.csv": "b3387cf87dd12dda95d0521428790f8921b3f93c347df0b0d6548f8dafbfd48e",
+    "outputs/valuation.json": "f902e30d48efecafe8373caf5ca61ccd25ca210731a16941b47c435cbc5f5916",
+    "outputs/forecast_rebuild_verification.json": "d837412a52be200bee4e47ca268385e6f9ce6f289d6e5d63ff66dd3c17c63f7e",
+    "outputs/dcf_sensitivity.csv": "3adf3e2c0a00faa73ea80d0ad516f57a0aa81efc3248c560bdafd92651f21ba4",
+    "outputs/execution_receipt.json": "1a5343f39765c10c186f7b6028797f99e38a0d41aaf4070c53704edb28b02042",
+    "outputs/coverage.json": "32c85ca6e0d82b9abf39a11cbfcd77be441a91772cc26029c1ea88bc2d3a0c8b",
+    "outputs/dcf_cashflows.csv": "2752863dc53a3b1f60fd71520703eb5caa09b237ba090922d94acf692f592f9a",
+    "outputs/signals.csv": "82871ac030c628bb408447ecf98e42cb3e5819dba5137a1c196ef9b3a94045dc",
+    "outputs/daily_nav.csv": "6d7c63ef9a5c6e4130e545092d06276aa47acb4991e0394bd42b2b1306089baa",
+    "outputs/chart_structure_verification.json": "f32c0df352779fc2f919b6177bd9bad9e1685196e554557cd7f6536a7a4be6b4",
+    "outputs/independent_verification.json": "d51a402f8bd68a922ced4b88fbfd3ccb09aae4c07965e0fa7258ab315b015710",
+    "outputs/temporal_audit.csv": "af466a7e17a6decbef30ade88335fe91f18a29fb898bc9c2aa42e355356ea9f2"
+  },
+  "status": "read-only independent recheck in progress; originals preserved"
+}

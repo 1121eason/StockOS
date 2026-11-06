@@ -17,6 +17,7 @@ from valuation_engine.ai.contracts import (
 from valuation_engine.ai.guards import admit_feature, confidence, safe_narrative, validate_evidence
 from valuation_engine.ai.prompts import SYSTEM, TASKS, prompt
 from valuation_engine.ai.provider import ProviderUnavailable
+from valuation_engine.ai.quarter_package import build_package
 from valuation_engine.ai.sources import chunks, retrieve
 from valuation_engine.db.schema import (
     AIAnalysisEvent,
@@ -57,7 +58,12 @@ def invoke(db, run, provider, stage, payload, response_type):
         raw = {}
         started = datetime.now(UTC).isoformat()
         try:
-            raw = callback(exact)
+            package_request = getattr(provider, "request_with_package", None)
+            raw = (
+                package_request(stage, exact, run.context_json)
+                if provider.provider_name == "codex_cli" and package_request is not None
+                else callback(exact)
+            )
             cli_identity = (
                 provider.provider_name
                 in {"claude_cli", "gemini_cli", "antigravity_cli", "codex_cli"}
@@ -88,6 +94,9 @@ def invoke(db, run, provider, stage, payload, response_type):
             # Do not log exception text/headers: adapters may put credentials in exceptions.
             status = "invalid_or_unavailable"
             error_type = type(exc).__name__
+            journal = getattr(provider, "_attempt_journal", None)
+            if getattr(journal, "process_state_unknown", False):
+                raw["execution_metadata"] = {"failure_kind": "termination_unconfirmed"}
         if provider.provider_name in {"claude_cli", "gemini_cli", "antigravity_cli", "codex_cli"}:
             metadata = raw.setdefault("execution_metadata", {})
             for key, value in provider.settings.items():
@@ -99,7 +108,10 @@ def invoke(db, run, provider, stage, payload, response_type):
                 if raw.get("structured_output") is not None
                 else "provider_unavailable",
             )
-            metadata.setdefault("started_at", started)
+            metadata.setdefault(
+                "started_at",
+                None if metadata.get("failure_kind") == "process_launch_failure" else started,
+            )
             metadata.setdefault("completed_at", datetime.now(UTC).isoformat())
             metadata.setdefault("exit_code", None)
             metadata.update(
@@ -142,6 +154,7 @@ def invoke(db, run, provider, stage, payload, response_type):
             "ANTIGRAVITY_CLI_PIT_ISOLATION_UNSUPPORTED",
             "PIT_TOOL_OR_PERMISSION_ATTEMPT",
             "CODEX_CLI_PIT_ISOLATION_UNSUPPORTED",
+            "termination_unconfirmed",
         }:
             break
     raise ProviderUnavailable("Structured provider call failed after bounded attempts")
@@ -150,11 +163,34 @@ def invoke(db, run, provider, stage, payload, response_type):
 def prepare(db, quant_run, raw_dir=None):
     context = context_for(db, quant_run)
     sources = retrieve(db, quant_run.company_id, quant_run.information_cutoff, raw_dir)
-    return {"quant_context": context, "sources": sources}
+    prepared = {"quant_context": context, "sources": sources}
+    prepared["quarter_package_manifest"] = build_package(prepared)["manifest"]
+    return prepared
 
 
-def analyze(db, quant_run, provider, raw_dir=None, refresh=False):
-    prepared = prepare(db, quant_run, raw_dir)
+def analyze(
+    db,
+    quant_run,
+    provider,
+    raw_dir=None,
+    refresh=False,
+    *,
+    prepared_context=None,
+    approved_context_hash=None,
+):
+    if prepared_context is None:
+        if approved_context_hash is not None:
+            raise ValueError("An approved context hash requires its prepared analysis context")
+        prepared = prepare(db, quant_run, raw_dir)
+    else:
+        if not isinstance(prepared_context, dict):
+            raise ValueError("Prepared analysis context must be a mapping")
+        if (
+            not isinstance(approved_context_hash, str)
+            or digest(prepared_context) != approved_context_hash
+        ):
+            raise ValueError("Prepared analysis context does not match its approved context hash")
+        prepared = prepared_context
     context, sources = prepared["quant_context"], prepared["sources"]
     if provider.provider_name in {"claude_cli", "gemini_cli", "antigravity_cli", "codex_cli"}:
         from valuation_engine.ai.validation import QUARTERS

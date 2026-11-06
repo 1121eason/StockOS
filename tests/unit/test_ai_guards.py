@@ -13,6 +13,8 @@ def evidence(implication="positive", key="e"):
         "span": "Demand remains strong across our customers.",
         "span_hash": key,
         "speaker": None,
+        "speaker_status": "unknown",
+        "speaker_role": None,
         "topic": "demand_momentum",
         "implication": implication,
         "certainty": "explicit",
@@ -31,6 +33,8 @@ def test_numeric_prose_and_nonexistent_span_fail_closed():
         block_id="missing",
         span="Demand remains strong across customers.",
         speaker=None,
+        speaker_status="unknown",
+        speaker_role=None,
         topic="demand_momentum",
         implication="positive",
         certainty="explicit",
@@ -39,6 +43,41 @@ def test_numeric_prose_and_nonexistent_span_fail_closed():
     assert validate_evidence(draft, {})[1] == "unknown_or_future_block"
     b = {**evidence(), "text": "Demand is weak across our customers."}
     assert validate_evidence(draft, {"missing": b})[1] == "span_not_in_source"
+
+
+def test_fiscal_quarter_label_remains_unsafe_in_generated_narrative():
+    from valuation_engine.ai.guards import safe_narrative
+
+    assert not safe_narrative("FY2023-Q2 downside interpretation")
+
+
+def test_speaker_requires_exact_source_metadata_and_verified_role():
+    draft = EvidenceDraft(
+        key="e",
+        block_id="b",
+        span="Demand remains strong across our customers.",
+        speaker="Jensen Huang",
+        speaker_status="verified",
+        speaker_role=None,
+        topic="demand_momentum",
+        implication="positive",
+        certainty="explicit",
+        statement_type="management_statement",
+    )
+    block = {
+        **evidence(),
+        "text": "Demand remains strong across our customers. Jensen Huang is the chief executive.",
+        "speaker": None,
+        "speaker_role": None,
+    }
+    assert validate_evidence(draft, {"b": block})[1] == "unsupported_speaker"
+    block["speaker"] = "Jensen Huang"
+    block["speaker_role"] = "NVIDIA management"
+    assert validate_evidence(draft, {"b": block})[0]["speaker_status"] == "verified"
+    draft.speaker_role = "NVIDIA management"
+    assert validate_evidence(draft, {"b": block})[0]["speaker_role"] == "NVIDIA management"
+    block["speaker_role"] = None
+    assert validate_evidence(draft, {"b": block})[1] == "unsupported_speaker_role"
 
 
 def test_same_source_repetition_cannot_create_high_confidence():
@@ -73,6 +112,18 @@ def test_strict_schema_disallows_unknown_fields():
     assert set(s["required"]) == set(s["properties"])
 
 
+def test_cross_topic_support_and_contradiction_still_reject_entire_feature():
+    draft = FeatureDraft(
+        feature_name="demand_momentum", feature_value=0.4, time_horizon="unspecified",
+        supporting_evidence=["e"], contradicting_evidence=[], net_assessment="Demand remains supported.",
+    )
+    items = {"e": evidence(), "inventory": {**evidence(key="inventory"), "topic": "inventory_quality"}}
+    assert admit_feature(draft, items)[0] is not None
+    for field in ("supporting_evidence", "contradicting_evidence"):
+        invalid = draft.model_copy(update={field: ["e", "inventory"]})
+        assert admit_feature(invalid, items) == (None, "evidence_topic_mismatch")
+
+
 def test_pdf_transcript_excludes_analyst_opinion(monkeypatch):
     from types import SimpleNamespace
 
@@ -100,6 +151,7 @@ Customers continue to adopt our computing platform.
     assert len(result) == 2
     assert "outperform" not in str(result)
     assert all(r["speaker"] for r in result)
+    assert all(r["speaker_role"] == "NVIDIA management" for r in result)
 
 
 def test_openai_adapter_structured_request_and_refusal(monkeypatch):
@@ -145,3 +197,37 @@ def test_openai_adapter_structured_request_and_refusal(monkeypatch):
     assert "synthetic-key" not in str(exact) and "synthetic-key" not in str(p.settings)
     refused = True
     assert p.extract_evidence(exact)["structured_output"] is None
+
+
+def test_exact_evidence_word_limit_accepts_80_and_rejects_81():
+    from valuation_engine.ai.contracts import MAX_EVIDENCE_WORDS
+
+    assert MAX_EVIDENCE_WORDS == 80
+    block = {**evidence(), "text": " ".join(["firm"] * 81)}
+    draft = EvidenceDraft(
+        key="e", block_id="b", span=" ".join(["firm"] * 80),
+        speaker=None, speaker_status="unknown", speaker_role=None,
+        topic="demand_momentum", implication="positive", certainty="explicit",
+        statement_type="management_statement",
+    )
+    assert validate_evidence(draft, {"b": block})[1] is None
+    draft.span = block["text"]
+    assert validate_evidence(draft, {"b": block})[1] == "evidence_span_too_long"
+
+
+def test_confidence_robust_to_missing_hash_keys():
+    from valuation_engine.ai.guards import confidence
+
+    # Items without explicit span_hash or source_hash should not raise KeyError
+    items = [
+        {"key": "ev1", "topic": "competition_outlook", "statement_type": "reported_fact", "certainty": "explicit"},
+        {"key": "ev2", "topic": "competition_outlook", "statement_type": "management_statement", "certainty": "qualified"},
+    ]
+    conf = confidence(items)
+    assert 0.0 < conf <= 1.0
+
+    # Contradictory items without span_hash
+    cont = [{"key": "ev3", "topic": "competition_outlook"}]
+    conf_with_cont = confidence(items, cont)
+    assert 0.0 < conf_with_cont <= conf
+

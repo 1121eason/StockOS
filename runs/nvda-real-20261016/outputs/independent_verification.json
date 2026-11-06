@@ -1,0 +1,43 @@
+{
+  "csv_accounting_checks": [
+    {
+      "strategy": "NaiveDCFPolicy",
+      "variant": "gross",
+      "max_daily_nav_error_usd": 1.4551915228366852e-11,
+      "passed": true
+    },
+    {
+      "strategy": "NaiveDCFPolicy",
+      "variant": "net",
+      "max_daily_nav_error_usd": 0.0,
+      "passed": true
+    },
+    {
+      "strategy": "FixedAllocationPolicy",
+      "variant": "gross",
+      "max_daily_nav_error_usd": 0.0,
+      "passed": true
+    },
+    {
+      "strategy": "FixedAllocationPolicy",
+      "variant": "net",
+      "max_daily_nav_error_usd": 0.0,
+      "passed": true
+    },
+    {
+      "strategy": "BuyAndHoldPolicy",
+      "variant": "gross",
+      "max_daily_nav_error_usd": 0.0,
+      "passed": true
+    },
+    {
+      "strategy": "BuyAndHoldPolicy",
+      "variant": "net",
+      "max_daily_nav_error_usd": 2.9103830456733704e-11,
+      "passed": true
+    }
+  ],
+  "independent_dcf_per_share": "70.71863746098645210543717872",
+  "independent_dcf_ev": "1734626176917.997670146373994",
+  "all_passed": true
+}

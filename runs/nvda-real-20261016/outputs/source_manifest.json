@@ -1,0 +1,538 @@
+[
+  {
+    "document_id": 1,
+    "type": "Earnings Release",
+    "url": "https://nvidianews.nvidia.com/news/nvidia-announces-financial-results-for-first-quarter-fiscal-2021",
+    "retrieved_at": "2026-09-12 09:26:00.458022",
+    "sha256": "f8d1d449a676cb930ec73bcddae2b3e04c673188af7778d576f93fc4978245c2",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/f8d1d449a676cb930ec73bcddae2b3e04c673188af7778d576f93fc4978245c2"
+  },
+  {
+    "document_id": 2,
+    "type": "Earnings Release",
+    "url": "https://nvidianews.nvidia.com/news/nvidia-announces-financial-results-for-second-quarter-fiscal-2021",
+    "retrieved_at": "2026-09-12 09:26:00.628697",
+    "sha256": "aa484e7e63a3037cb2c2fc07c7370b3f94ee8f3a7c19d9a2b4f1727c17508b40",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/aa484e7e63a3037cb2c2fc07c7370b3f94ee8f3a7c19d9a2b4f1727c17508b40"
+  },
+  {
+    "document_id": 3,
+    "type": "Earnings Release",
+    "url": "https://nvidianews.nvidia.com/news/nvidia-announces-financial-results-for-third-quarter-fiscal-2021",
+    "retrieved_at": "2026-09-12 09:26:00.789823",
+    "sha256": "311a19ee9cac809a41d7973169a4e7ad8963ff8860c977ff580df5090499d2c3",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/311a19ee9cac809a41d7973169a4e7ad8963ff8860c977ff580df5090499d2c3"
+  },
+  {
+    "document_id": 4,
+    "type": "Earnings Release",
+    "url": "https://nvidianews.nvidia.com/news/nvidia-announces-financial-results-for-fourth-quarter-and-fiscal-2021",
+    "retrieved_at": "2026-09-12 09:26:00.990816",
+    "sha256": "618b044e1e072e7032700016cd0dd65a790017cd103867e7a2dd0b9ae1c30824",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/618b044e1e072e7032700016cd0dd65a790017cd103867e7a2dd0b9ae1c30824"
+  },
+  {
+    "document_id": 5,
+    "type": "Earnings Release",
+    "url": "https://nvidianews.nvidia.com/news/nvidia-announces-financial-results-for-first-quarter-fiscal-2022",
+    "retrieved_at": "2026-09-12 09:26:01.133088",
+    "sha256": "be7836378aa3f942ba53a33fec2b94293fbd46c9965a0c2d2ee7777446aca08c",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/be7836378aa3f942ba53a33fec2b94293fbd46c9965a0c2d2ee7777446aca08c"
+  },
+  {
+    "document_id": 6,
+    "type": "Earnings Release",
+    "url": "https://nvidianews.nvidia.com/news/nvidia-announces-financial-results-for-second-quarter-fiscal-2022",
+    "retrieved_at": "2026-09-12 09:26:01.338948",
+    "sha256": "66de0b113e45694cf8c0526a0dd723cc096633a3e89d92dcaf06ab0ec8787c96",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/66de0b113e45694cf8c0526a0dd723cc096633a3e89d92dcaf06ab0ec8787c96"
+  },
+  {
+    "document_id": 7,
+    "type": "Earnings Release",
+    "url": "https://nvidianews.nvidia.com/news/nvidia-announces-financial-results-for-third-quarter-fiscal-2022",
+    "retrieved_at": "2026-09-12 09:26:01.529562",
+    "sha256": "8798933cc7d2afd8c5fa8aa72c03c86e164a501a8b0988ca2a688425ee523ae7",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/8798933cc7d2afd8c5fa8aa72c03c86e164a501a8b0988ca2a688425ee523ae7"
+  },
+  {
+    "document_id": 8,
+    "type": "Earnings Release",
+    "url": "https://nvidianews.nvidia.com/news/nvidia-announces-financial-results-for-fourth-quarter-and-fiscal-2022",
+    "retrieved_at": "2026-09-12 09:26:01.705666",
+    "sha256": "7e97522c51ebbb354e4762874e8fe67791a640e231d2e61ae2892d291cecf4fd",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/7e97522c51ebbb354e4762874e8fe67791a640e231d2e61ae2892d291cecf4fd"
+  },
+  {
+    "document_id": 9,
+    "type": "Earnings Release",
+    "url": "https://nvidianews.nvidia.com/news/nvidia-announces-financial-results-for-first-quarter-fiscal-2023",
+    "retrieved_at": "2026-09-12 09:26:01.852837",
+    "sha256": "d02d464ecf73612f376f48488790d12dd008ce76254e4ae1b76f1957635544be",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/d02d464ecf73612f376f48488790d12dd008ce76254e4ae1b76f1957635544be"
+  },
+  {
+    "document_id": 10,
+    "type": "Earnings Release",
+    "url": "https://nvidianews.nvidia.com/news/nvidia-announces-financial-results-for-second-quarter-fiscal-2023",
+    "retrieved_at": "2026-09-12 09:26:02.130177",
+    "sha256": "0792e55ebd8b4818446b55f13ea17b5e85dbbccc36799b68d4e6419bad85be24",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/0792e55ebd8b4818446b55f13ea17b5e85dbbccc36799b68d4e6419bad85be24"
+  },
+  {
+    "document_id": 11,
+    "type": "Earnings Release",
+    "url": "https://nvidianews.nvidia.com/news/nvidia-announces-financial-results-for-third-quarter-fiscal-2023",
+    "retrieved_at": "2026-09-12 09:26:02.283056",
+    "sha256": "e6155c8b29d9149626405e74ecedef66169136e16b9b1e52f2d0c2a114053f7d",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/e6155c8b29d9149626405e74ecedef66169136e16b9b1e52f2d0c2a114053f7d"
+  },
+  {
+    "document_id": 12,
+    "type": "Earnings Release",
+    "url": "https://nvidianews.nvidia.com/news/nvidia-announces-financial-results-for-fourth-quarter-and-fiscal-2023",
+    "retrieved_at": "2026-09-12 09:26:02.427830",
+    "sha256": "6be4b2e073ae4a2d307cd9009f2fbe9c1e3d08f80d8bfb50d118614d8bc2aad7",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/6be4b2e073ae4a2d307cd9009f2fbe9c1e3d08f80d8bfb50d118614d8bc2aad7"
+  },
+  {
+    "document_id": 13,
+    "type": "Earnings Release",
+    "url": "https://nvidianews.nvidia.com/news/nvidia-announces-financial-results-for-first-quarter-fiscal-2024",
+    "retrieved_at": "2026-09-12 09:26:02.553067",
+    "sha256": "5177c03d3a334420eee9a4af9106380a489f1036511f8c215c756f09b25e7089",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/5177c03d3a334420eee9a4af9106380a489f1036511f8c215c756f09b25e7089"
+  },
+  {
+    "document_id": 14,
+    "type": "Earnings Release",
+    "url": "https://nvidianews.nvidia.com/news/nvidia-announces-financial-results-for-second-quarter-fiscal-2024",
+    "retrieved_at": "2026-09-12 09:26:02.709558",
+    "sha256": "378d8df7493a0b7c5a2677f4d675e1dadb0b1df9795ef44baf15cd03b2152506",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/378d8df7493a0b7c5a2677f4d675e1dadb0b1df9795ef44baf15cd03b2152506"
+  },
+  {
+    "document_id": 15,
+    "type": "Earnings Release",
+    "url": "https://nvidianews.nvidia.com/news/nvidia-announces-financial-results-for-third-quarter-fiscal-2024",
+    "retrieved_at": "2026-09-12 09:26:02.882255",
+    "sha256": "654cbe2963b75373d012b727d8970bea0eb4ddc169768621e156e3b8ca24de57",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/654cbe2963b75373d012b727d8970bea0eb4ddc169768621e156e3b8ca24de57"
+  },
+  {
+    "document_id": 16,
+    "type": "Earnings Release",
+    "url": "https://nvidianews.nvidia.com/news/nvidia-announces-financial-results-for-fourth-quarter-and-fiscal-2024",
+    "retrieved_at": "2026-09-12 09:26:03.068286",
+    "sha256": "ac447643aa343de61c308b36cdff13231903ff26757c92db7535529c1aef8f1f",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/ac447643aa343de61c308b36cdff13231903ff26757c92db7535529c1aef8f1f"
+  },
+  {
+    "document_id": 17,
+    "type": "Earnings Release",
+    "url": "https://nvidianews.nvidia.com/news/nvidia-announces-financial-results-for-first-quarter-fiscal-2025",
+    "retrieved_at": "2026-09-12 09:26:03.236471",
+    "sha256": "dd318ff6e661a52b798158ca81b0152d6d199bb93103f9b74c16556809a27c17",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/dd318ff6e661a52b798158ca81b0152d6d199bb93103f9b74c16556809a27c17"
+  },
+  {
+    "document_id": 18,
+    "type": "Earnings Release",
+    "url": "https://nvidianews.nvidia.com/news/nvidia-announces-financial-results-for-second-quarter-fiscal-2025",
+    "retrieved_at": "2026-09-12 09:26:03.498587",
+    "sha256": "7955472fb263c7818573c17573e2b79677d73a500d21fc2ab53bef0c7c0fe20b",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/7955472fb263c7818573c17573e2b79677d73a500d21fc2ab53bef0c7c0fe20b"
+  },
+  {
+    "document_id": 19,
+    "type": "Earnings Release",
+    "url": "https://nvidianews.nvidia.com/news/nvidia-announces-financial-results-for-third-quarter-fiscal-2025",
+    "retrieved_at": "2026-09-12 09:26:03.708733",
+    "sha256": "b0727028e12c7ead422c0b3326458aa54b53631dfa84e3c028216604e49b32ee",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/b0727028e12c7ead422c0b3326458aa54b53631dfa84e3c028216604e49b32ee"
+  },
+  {
+    "document_id": 20,
+    "type": "Earnings Release",
+    "url": "https://nvidianews.nvidia.com/news/nvidia-announces-financial-results-for-fourth-quarter-and-fiscal-2025",
+    "retrieved_at": "2026-09-12 09:26:03.906129",
+    "sha256": "98ba2e2dc3badb9a1023b90a36f4a3bab670e8ee168a3d2be6fafb4c267f6511",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/98ba2e2dc3badb9a1023b90a36f4a3bab670e8ee168a3d2be6fafb4c267f6511"
+  },
+  {
+    "document_id": 21,
+    "type": "Earnings Release",
+    "url": "https://nvidianews.nvidia.com/news/nvidia-announces-financial-results-for-first-quarter-fiscal-2026",
+    "retrieved_at": "2026-09-12 09:26:04.192764",
+    "sha256": "1a2097419562ab6c6ff52975d7d523b8b24f15141e062f14f53ff5be7b438470",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/1a2097419562ab6c6ff52975d7d523b8b24f15141e062f14f53ff5be7b438470"
+  },
+  {
+    "document_id": 22,
+    "type": "Earnings Release",
+    "url": "https://nvidianews.nvidia.com/news/nvidia-announces-financial-results-for-second-quarter-fiscal-2026",
+    "retrieved_at": "2026-09-12 09:26:04.360154",
+    "sha256": "a07b9d22a6399a647a98f1a68c1867d92c6dd4a680e61c2f1b62bc2e64261618",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/a07b9d22a6399a647a98f1a68c1867d92c6dd4a680e61c2f1b62bc2e64261618"
+  },
+  {
+    "document_id": 27,
+    "type": "Publication timestamp evidence",
+    "url": "https://www.nasdaq.com/press-release/nvidia-announces-financial-results-for-first-quarter-fiscal-2021-2020-05-21",
+    "retrieved_at": "2026-09-12 10:28:43.663831",
+    "sha256": "16fc786cb11a3c8d7e9ab8b6a29b68ac672c2e6666c43984fb27bb6d7e38622d",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/16fc786cb11a3c8d7e9ab8b6a29b68ac672c2e6666c43984fb27bb6d7e38622d"
+  },
+  {
+    "document_id": 28,
+    "type": "Publication timestamp evidence",
+    "url": "https://www.nasdaq.com/press-release/nvidia-announces-financial-results-for-second-quarter-fiscal-2021-2020-08-19",
+    "retrieved_at": "2026-09-12 10:28:43.822431",
+    "sha256": "11d4c5c032de34a5d0f84b6d616a4d5b85831d6d896e049cd58ac22a6492dd2b",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/11d4c5c032de34a5d0f84b6d616a4d5b85831d6d896e049cd58ac22a6492dd2b"
+  },
+  {
+    "document_id": 29,
+    "type": "Publication timestamp evidence",
+    "url": "https://www.nasdaq.com/press-release/nvidia-announces-financial-results-for-third-quarter-fiscal-2021-2020-11-18",
+    "retrieved_at": "2026-09-12 10:28:44.064947",
+    "sha256": "17af14006d34b8ea2ef4ca41b895a492ce64a7460dc1b2840e7461aeae570609",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/17af14006d34b8ea2ef4ca41b895a492ce64a7460dc1b2840e7461aeae570609"
+  },
+  {
+    "document_id": 30,
+    "type": "Publication timestamp evidence",
+    "url": "https://www.nasdaq.com/press-release/nvidia-announces-financial-results-for-fourth-quarter-and-fiscal-2021-2021-02-24",
+    "retrieved_at": "2026-09-12 10:28:44.246607",
+    "sha256": "d118417087f76c5611c642bd734fec9797465e42a153edde4297490e4fbfe212",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/d118417087f76c5611c642bd734fec9797465e42a153edde4297490e4fbfe212"
+  },
+  {
+    "document_id": 31,
+    "type": "Publication timestamp evidence",
+    "url": "https://www.nasdaq.com/press-release/nvidia-announces-financial-results-for-first-quarter-fiscal-2022-2021-05-26",
+    "retrieved_at": "2026-09-12 10:28:44.380487",
+    "sha256": "482911a321e3e5051ff6657790903c959ff10a4ff3cc9a7a89f9a4606c59774f",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/482911a321e3e5051ff6657790903c959ff10a4ff3cc9a7a89f9a4606c59774f"
+  },
+  {
+    "document_id": 32,
+    "type": "Publication timestamp evidence",
+    "url": "https://www.nasdaq.com/press-release/nvidia-announces-financial-results-for-second-quarter-fiscal-2022-2021-08-18",
+    "retrieved_at": "2026-09-12 10:28:44.554749",
+    "sha256": "67bd8a7bc01fe2e600897cac120b8d5905200bc2e6900bf200a3948110595cb4",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/67bd8a7bc01fe2e600897cac120b8d5905200bc2e6900bf200a3948110595cb4"
+  },
+  {
+    "document_id": 33,
+    "type": "Publication timestamp evidence",
+    "url": "https://www.nasdaq.com/press-release/nvidia-announces-financial-results-for-third-quarter-fiscal-2022-2021-11-17",
+    "retrieved_at": "2026-09-12 10:28:44.803171",
+    "sha256": "99ffa02d7135b4a5335ebc1715dd7ea5d07373d6fb480b3031525faeaa9e537c",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/99ffa02d7135b4a5335ebc1715dd7ea5d07373d6fb480b3031525faeaa9e537c"
+  },
+  {
+    "document_id": 34,
+    "type": "Publication timestamp evidence",
+    "url": "https://www.nasdaq.com/press-release/nvidia-announces-financial-results-for-fourth-quarter-and-fiscal-2022-2022-02-16",
+    "retrieved_at": "2026-09-12 10:28:45.027436",
+    "sha256": "8f183129a4a3a569b72aba20b14e204247300fc86d3feee323e5ba92ca03202d",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/8f183129a4a3a569b72aba20b14e204247300fc86d3feee323e5ba92ca03202d"
+  },
+  {
+    "document_id": 35,
+    "type": "Publication timestamp evidence",
+    "url": "https://www.nasdaq.com/press-release/nvidia-announces-financial-results-for-first-quarter-fiscal-2023-2022-05-25",
+    "retrieved_at": "2026-09-12 10:28:45.181741",
+    "sha256": "42a3cbc37a2220290b2f6b9768f434708a4ac5cc673e1c48137f8c7532922273",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/42a3cbc37a2220290b2f6b9768f434708a4ac5cc673e1c48137f8c7532922273"
+  },
+  {
+    "document_id": 36,
+    "type": "Publication timestamp evidence",
+    "url": "https://www.nasdaq.com/press-release/nvidia-announces-financial-results-for-second-quarter-fiscal-2023-2022-08-24",
+    "retrieved_at": "2026-09-12 10:28:45.348321",
+    "sha256": "989b860c20de7d0879f951fe09b4f841ece4c7cdae92a7113b5859feac5090a1",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/989b860c20de7d0879f951fe09b4f841ece4c7cdae92a7113b5859feac5090a1"
+  },
+  {
+    "document_id": 37,
+    "type": "Publication timestamp evidence",
+    "url": "https://www.nasdaq.com/press-release/nvidia-announces-financial-results-for-third-quarter-fiscal-2023-2022-11-16",
+    "retrieved_at": "2026-09-12 10:28:45.601911",
+    "sha256": "7f9a271cb83a54d27e60b4cb320dc1ccd1898607c27631245f5df903a1998efd",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/7f9a271cb83a54d27e60b4cb320dc1ccd1898607c27631245f5df903a1998efd"
+  },
+  {
+    "document_id": 38,
+    "type": "Publication timestamp evidence",
+    "url": "https://www.nasdaq.com/press-release/nvidia-announces-financial-results-for-fourth-quarter-and-fiscal-2023-2023-02-22",
+    "retrieved_at": "2026-09-12 10:28:45.781822",
+    "sha256": "c16d916c9e4070bac42e6eb24911ade8cb5869831855edfb0a2c6d8abb157ae7",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/c16d916c9e4070bac42e6eb24911ade8cb5869831855edfb0a2c6d8abb157ae7"
+  },
+  {
+    "document_id": 39,
+    "type": "Publication timestamp evidence",
+    "url": "https://www.nasdaq.com/press-release/nvidia-announces-financial-results-for-first-quarter-fiscal-2024-2023-05-24",
+    "retrieved_at": "2026-09-12 10:28:45.906859",
+    "sha256": "906d8ec13b5f8ce550264469465332f97511f532d3f2ea2412fe1301a4e73161",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/906d8ec13b5f8ce550264469465332f97511f532d3f2ea2412fe1301a4e73161"
+  },
+  {
+    "document_id": 40,
+    "type": "Publication timestamp evidence",
+    "url": "https://www.nasdaq.com/press-release/nvidia-announces-financial-results-for-second-quarter-fiscal-2024-2023-08-23",
+    "retrieved_at": "2026-09-12 10:28:46.075176",
+    "sha256": "f9c6dfa4bbe066bcc0e3612aa490e21949431c1e10aa0ace33b2365739691901",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/f9c6dfa4bbe066bcc0e3612aa490e21949431c1e10aa0ace33b2365739691901"
+  },
+  {
+    "document_id": 41,
+    "type": "Publication timestamp evidence",
+    "url": "https://www.nasdaq.com/press-release/nvidia-announces-financial-results-for-third-quarter-fiscal-2024-2023-11-21",
+    "retrieved_at": "2026-09-12 10:28:46.336496",
+    "sha256": "0e9f69eae65f291cbfb04c51cfcf7b4af9c8326ee8e8889d812c879f327bce18",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/0e9f69eae65f291cbfb04c51cfcf7b4af9c8326ee8e8889d812c879f327bce18"
+  },
+  {
+    "document_id": 42,
+    "type": "Publication timestamp evidence",
+    "url": "https://www.nasdaq.com/press-release/nvidia-announces-financial-results-for-fourth-quarter-and-fiscal-2024-2024-02-21",
+    "retrieved_at": "2026-09-12 10:28:46.518214",
+    "sha256": "e68f11725e108f9a983580440e6a443dd9adc68cd6cca0898d18b387eb64ad49",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/e68f11725e108f9a983580440e6a443dd9adc68cd6cca0898d18b387eb64ad49"
+  },
+  {
+    "document_id": 43,
+    "type": "Publication timestamp evidence",
+    "url": "https://www.nasdaq.com/press-release/nvidia-announces-financial-results-for-first-quarter-fiscal-2025-2024-05-22",
+    "retrieved_at": "2026-09-12 10:28:46.657428",
+    "sha256": "00099e6b316e7d3b1143edb5882962c2a9f186fa15d6a0e68be091f446d765ca",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/00099e6b316e7d3b1143edb5882962c2a9f186fa15d6a0e68be091f446d765ca"
+  },
+  {
+    "document_id": 45,
+    "type": "Publication timestamp evidence",
+    "url": "https://www.globenewswire.com/news-release/2024/08/28/2937384/0/en/nvidia-announces-financial-results-for-second-quarter-fiscal-2025.html",
+    "retrieved_at": "2026-09-12 10:28:46.940117",
+    "sha256": "2681800ce01fd071b5f94aab3c69603e164f922653a4f0c84bb9bcbea443b19c",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/2681800ce01fd071b5f94aab3c69603e164f922653a4f0c84bb9bcbea443b19c"
+  },
+  {
+    "document_id": 46,
+    "type": "Publication timestamp evidence",
+    "url": "https://www.globenewswire.com/news-release/2024/11/20/2984778/0/en/nvidia-announces-financial-results-for-third-quarter-fiscal-2025.html",
+    "retrieved_at": "2026-09-12 10:28:47.165201",
+    "sha256": "58633af4806a599c351b5765652446875a589df4a1212c3abf68bd015a0a06f6",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/58633af4806a599c351b5765652446875a589df4a1212c3abf68bd015a0a06f6"
+  },
+  {
+    "document_id": 47,
+    "type": "Publication timestamp evidence",
+    "url": "https://www.globenewswire.com/news-release/2025/02/26/3033384/0/en/nvidia-announces-financial-results-for-fourth-quarter-and-fiscal-2025.html",
+    "retrieved_at": "2026-09-12 10:28:47.317079",
+    "sha256": "f8a24e15be365c3e3728b94433a2e5133f27d9a300115e98fa3b3d222964a004",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/f8a24e15be365c3e3728b94433a2e5133f27d9a300115e98fa3b3d222964a004"
+  },
+  {
+    "document_id": 48,
+    "type": "Publication timestamp evidence",
+    "url": "https://www.globenewswire.com/news-release/2025/05/28/3089944/0/en/nvidia-announces-financial-results-for-first-quarter-fiscal-2026.html",
+    "retrieved_at": "2026-09-12 10:28:47.443336",
+    "sha256": "5f5a422585d6c4289e9e4188dfcac35ef63ea892ca586de1c1cfc84bcccd6277",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/5f5a422585d6c4289e9e4188dfcac35ef63ea892ca586de1c1cfc84bcccd6277"
+  },
+  {
+    "document_id": 49,
+    "type": "Publication timestamp evidence",
+    "url": "https://www.globenewswire.com/news-release/2025/08/27/3140390/0/en/nvidia-announces-financial-results-for-second-quarter-fiscal-2026.html",
+    "retrieved_at": "2026-09-12 10:28:47.588422",
+    "sha256": "164f82477a8bc8198ec2c4536e335935532387f3803805c92b307ee9d23f4fc1",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/164f82477a8bc8198ec2c4536e335935532387f3803805c92b307ee9d23f4fc1"
+  },
+  {
+    "document_id": 53,
+    "type": "Official stock split evidence",
+    "url": "https://investor.nvidia.com/files/doc_downloads/2024/06/nvidia-2024-stock-split_faq_investors.pdf",
+    "retrieved_at": "2026-09-12 10:28:48.091849",
+    "sha256": "7f6b7651d7874784cd7666464431395e62a9570a139932183470094c4d51faf3",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/7f6b7651d7874784cd7666464431395e62a9570a139932183470094c4d51faf3"
+  },
+  {
+    "document_id": 54,
+    "type": "Official stock split evidence",
+    "url": "https://nvidianews.nvidia.com/news/nvidia-announces-four-for-one-stock-split-pending-stockholder-approval-at-annual-meeting-set-for-june-3",
+    "retrieved_at": "2026-09-12 10:28:48.093677",
+    "sha256": "e739b29d1ac74962f3b71fce13623e0d54a70d75e02bf67740242a52a372c27e",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/e739b29d1ac74962f3b71fce13623e0d54a70d75e02bf67740242a52a372c27e"
+  },
+  {
+    "document_id": 55,
+    "type": "Original market data response",
+    "url": "https://query1.finance.yahoo.com/v8/finance/chart/NVDA?period1=1577836800&period2=1789171200&interval=1d&events=div%2Csplits",
+    "retrieved_at": "2026-09-12 10:28:48.128191",
+    "sha256": "95061f2842275691749f73737b8d26dd5c5409e5c9790ea27b61370dd8b32cee",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/95061f2842275691749f73737b8d26dd5c5409e5c9790ea27b61370dd8b32cee"
+  },
+  {
+    "document_id": 59,
+    "type": "XBRL accession extract",
+    "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581019000023/nvda-2019x10k.htm#companyfacts-extract",
+    "retrieved_at": "2026-09-12 12:22:43.988958",
+    "sha256": "92e3f8822cb641f54e774024c9ab91e3d8d16eac2ce1ae629eeac22087bd198f",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/92e3f8822cb641f54e774024c9ab91e3d8d16eac2ce1ae629eeac22087bd198f"
+  },
+  {
+    "document_id": 60,
+    "type": "XBRL accession extract",
+    "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581019000079/nvda2020q110q.htm#companyfacts-extract",
+    "retrieved_at": "2026-09-12 12:22:44.125302",
+    "sha256": "31b6f7e443bd8367176ff8a7293e0245fa84b5b8e731b0bac09a759978a12f0a",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/31b6f7e443bd8367176ff8a7293e0245fa84b5b8e731b0bac09a759978a12f0a"
+  },
+  {
+    "document_id": 61,
+    "type": "XBRL accession extract",
+    "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581019000144/nvda2020q210q.htm#companyfacts-extract",
+    "retrieved_at": "2026-09-12 12:22:44.262148",
+    "sha256": "fafde42b0499388879ef507bf0d303091782d74e573408f685ac87b6cbc17397",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/fafde42b0499388879ef507bf0d303091782d74e573408f685ac87b6cbc17397"
+  },
+  {
+    "document_id": 62,
+    "type": "XBRL accession extract",
+    "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581019000170/nvda2020q310q.htm#companyfacts-extract",
+    "retrieved_at": "2026-09-12 12:22:44.368917",
+    "sha256": "edc170346b9d50200a5a3b574eb348a75b5b242043182e04cb6f4c533b373a06",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/edc170346b9d50200a5a3b574eb348a75b5b242043182e04cb6f4c533b373a06"
+  },
+  {
+    "document_id": 63,
+    "type": "XBRL accession extract",
+    "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581020000010/nvda-2020x10k.htm#companyfacts-extract",
+    "retrieved_at": "2026-09-12 12:22:44.477809",
+    "sha256": "41cd7156e952704ecff957ccd1879c3036c67200c15cb98bb4c80dc6f30d118f",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/41cd7156e952704ecff957ccd1879c3036c67200c15cb98bb4c80dc6f30d118f"
+  },
+  {
+    "document_id": 78,
+    "type": "XBRL accession extract",
+    "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581023000227/nvda-20231029.htm#companyfacts-extract",
+    "retrieved_at": "2026-09-12 12:22:46.268137",
+    "sha256": "7e16dca6107cca0ba4972b7069d820590528dd85375a3824d6deb984c17c4e24",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/7e16dca6107cca0ba4972b7069d820590528dd85375a3824d6deb984c17c4e24"
+  },
+  {
+    "document_id": 82,
+    "type": "XBRL accession extract",
+    "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581024000316/nvda-20241027.htm#companyfacts-extract",
+    "retrieved_at": "2026-09-12 12:22:46.836140",
+    "sha256": "c0d0725b52b931f103ae66a66b5e2533645ea1d2f9d59a79a826676ea0a1d6e4",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/c0d0725b52b931f103ae66a66b5e2533645ea1d2f9d59a79a826676ea0a1d6e4"
+  },
+  {
+    "document_id": 83,
+    "type": "XBRL accession extract",
+    "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581025000023/nvda-20250126.htm#companyfacts-extract",
+    "retrieved_at": "2026-09-12 12:22:46.985898",
+    "sha256": "571719df0d83da5c3d07ee964778917875ed56fc05633edde0bb9c0beb340397",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/571719df0d83da5c3d07ee964778917875ed56fc05633edde0bb9c0beb340397"
+  },
+  {
+    "document_id": 94,
+    "type": "SEC primary filing",
+    "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581025000209/nvda-20250727.htm",
+    "retrieved_at": "2026-09-12 12:22:52.241284",
+    "sha256": "df1074c0b522e2c35d75a5f3e8d5aa0f39504059c935021f7e84f5a3f0d08d73",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/df1074c0b522e2c35d75a5f3e8d5aa0f39504059c935021f7e84f5a3f0d08d73"
+  },
+  {
+    "document_id": 95,
+    "type": "SEC primary filing",
+    "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581025000116/nvda-20250427.htm",
+    "retrieved_at": "2026-09-12 12:22:52.506449",
+    "sha256": "9f71aa343f38059e3e99cc1c37d97efee9971f4e3fd33377e363064c3a0168f4",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/9f71aa343f38059e3e99cc1c37d97efee9971f4e3fd33377e363064c3a0168f4"
+  },
+  {
+    "document_id": 96,
+    "type": "SEC primary filing",
+    "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581025000023/nvda-20250126.htm",
+    "retrieved_at": "2026-09-12 12:22:52.799901",
+    "sha256": "dae19486be264fd26eb00a7f920dc641041a261c81bc8c03b678eea947de4856",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/dae19486be264fd26eb00a7f920dc641041a261c81bc8c03b678eea947de4856"
+  },
+  {
+    "document_id": 97,
+    "type": "SEC primary filing",
+    "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581024000316/nvda-20241027.htm",
+    "retrieved_at": "2026-09-12 12:22:53.064732",
+    "sha256": "5cb3ef839fe641f8ef7bbdc37020fad887d4c0ba603bc02818cc7e923f5f5af6",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/5cb3ef839fe641f8ef7bbdc37020fad887d4c0ba603bc02818cc7e923f5f5af6"
+  },
+  {
+    "document_id": 98,
+    "type": "SEC primary filing",
+    "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581024000264/nvda-20240728.htm",
+    "retrieved_at": "2026-09-12 12:22:53.353285",
+    "sha256": "af5d2297eea965341271a23a0d8cb5c52ff9213d654d8f0489da34cec739ead1",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/af5d2297eea965341271a23a0d8cb5c52ff9213d654d8f0489da34cec739ead1"
+  },
+  {
+    "document_id": 100,
+    "type": "SEC primary filing",
+    "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581024000029/nvda-20240128.htm",
+    "retrieved_at": "2026-09-12 12:22:54.101699",
+    "sha256": "3ee6c75beb947d9e815464e5c0b6392db4f8ca20aa2f99666bc17c92b82d7759",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/3ee6c75beb947d9e815464e5c0b6392db4f8ca20aa2f99666bc17c92b82d7759"
+  },
+  {
+    "document_id": 101,
+    "type": "SEC primary filing",
+    "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581023000227/nvda-20231029.htm",
+    "retrieved_at": "2026-09-12 12:22:54.394176",
+    "sha256": "b0b1180e0aabd7c561b3c68b15dbe2826b17ad165259cdd4a9887fb4aa40ba42",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/b0b1180e0aabd7c561b3c68b15dbe2826b17ad165259cdd4a9887fb4aa40ba42"
+  },
+  {
+    "document_id": 103,
+    "type": "SEC primary filing",
+    "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581023000093/nvda-20230430.htm",
+    "retrieved_at": "2026-09-12 12:22:55.088177",
+    "sha256": "515435859eea12291e16c6a1163e079e90900ae65231eae57f87ee29afa552c4",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/515435859eea12291e16c6a1163e079e90900ae65231eae57f87ee29afa552c4"
+  },
+  {
+    "document_id": 104,
+    "type": "SEC primary filing",
+    "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581023000017/nvda-20230129.htm",
+    "retrieved_at": "2026-09-12 12:22:55.395295",
+    "sha256": "a4c77324eba4a3d88d46428ee097531930b75e46e983816352c76eff927621b7",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/a4c77324eba4a3d88d46428ee097531930b75e46e983816352c76eff927621b7"
+  },
+  {
+    "document_id": 105,
+    "type": "SEC primary filing",
+    "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581022000166/nvda-20221030.htm",
+    "retrieved_at": "2026-09-12 12:22:55.676221",
+    "sha256": "dea2a16c31b54d1b3108375ca338cde0914138feb0c3588a5f6850b432f2f446",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/dea2a16c31b54d1b3108375ca338cde0914138feb0c3588a5f6850b432f2f446"
+  },
+  {
+    "document_id": 106,
+    "type": "SEC primary filing",
+    "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581022000147/nvda-20220731.htm",
+    "retrieved_at": "2026-09-12 12:22:55.964170",
+    "sha256": "3fcc8e3277e625bafe4a4645b03c3f3d3a040e96373ef9adf09b6eabd4ba15dd",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/3fcc8e3277e625bafe4a4645b03c3f3d3a040e96373ef9adf09b6eabd4ba15dd"
+  },
+  {
+    "document_id": 107,
+    "type": "SEC primary filing",
+    "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581022000079/nvda-20220501.htm",
+    "retrieved_at": "2026-09-12 12:22:56.231578",
+    "sha256": "c18c97cb8279895c311c156f014eaeaa250d66b81af74aabbb01abcf9b604d94",
+    "local_path": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/inputs/raw/c18c97cb8279895c311c156f014eaeaa250d66b81af74aabbb01abcf9b604d94"
+  }
+]

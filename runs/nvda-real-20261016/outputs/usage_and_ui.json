@@ -1,0 +1,26 @@
+{
+  "weekly_used_percent_before": 3,
+  "weekly_used_percent_after": 4,
+  "conservative_stop_ceiling_percent": 45,
+  "resets_at_unix": 1792650012,
+  "usage_scope": "account-wide, not attributable solely to this run",
+  "ui_initial_final_check": "no listener at final check; original read-only localhost server restored using documented command",
+  "ui_code_or_data_changes": false,
+  "docker_touched": false,
+  "ui_health_http_status": 200,
+  "ui_health": {
+    "status": "ok",
+    "mode": "demo",
+    "database_connected": false,
+    "provider_calls": false,
+    "backend_baseline": "cbb78db"
+  },
+  "ui_server_pid": 46210,
+  "chart_visual_qa": {
+    "status": "denied",
+    "action": "Open local chart file in Chrome",
+    "target": "/Users/eason/Documents/Coding/StockOS/runs/nvda-real-20261016/outputs/nav_chart.html",
+    "reason": "Browser URL security policy permits only http/https and denies file protocol; no workaround attempted",
+    "completed": "Local HTML chart generated; coordinates verified against exported NAV; visual QA incomplete"
+  }
+}

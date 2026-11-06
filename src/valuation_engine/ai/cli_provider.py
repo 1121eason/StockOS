@@ -392,6 +392,11 @@ class CodexCLIProvider(CapabilityCLIProvider):
 
         return provider_request(self, stage, exact_prompt)
 
+    def request_with_package(self, stage, exact_prompt, package_context):
+        from valuation_engine.ai.codex_pit import provider_request
+
+        return provider_request(self, stage, exact_prompt, package_context)
+
 
 class ClaudeCLIProvider(CapabilityCLIProvider):
     cli_name = "claude"

@@ -1,0 +1,93 @@
+[
+  {
+    "quarter": "FY2023-Q2",
+    "forecast_run_id": 215,
+    "numeric_fields_compared": 154,
+    "maximum_absolute_error": "4.96743964E-9",
+    "passed": true
+  },
+  {
+    "quarter": "FY2023-Q3",
+    "forecast_run_id": 221,
+    "numeric_fields_compared": 154,
+    "maximum_absolute_error": "4.998167003369002246E-9",
+    "passed": true
+  },
+  {
+    "quarter": "FY2023-Q4",
+    "forecast_run_id": 227,
+    "numeric_fields_compared": 154,
+    "maximum_absolute_error": "4.99246676E-9",
+    "passed": true
+  },
+  {
+    "quarter": "FY2024-Q1",
+    "forecast_run_id": 233,
+    "numeric_fields_compared": 154,
+    "maximum_absolute_error": "4.87135591E-9",
+    "passed": true
+  },
+  {
+    "quarter": "FY2024-Q2",
+    "forecast_run_id": 239,
+    "numeric_fields_compared": 154,
+    "maximum_absolute_error": "4.967279823833171617E-9",
+    "passed": true
+  },
+  {
+    "quarter": "FY2024-Q3",
+    "forecast_run_id": 245,
+    "numeric_fields_compared": 154,
+    "maximum_absolute_error": "4.9172498566648958937E-9",
+    "passed": true
+  },
+  {
+    "quarter": "FY2024-Q4",
+    "forecast_run_id": 251,
+    "numeric_fields_compared": 154,
+    "maximum_absolute_error": "4.9438974580E-9",
+    "passed": true
+  },
+  {
+    "quarter": "FY2025-Q1",
+    "forecast_run_id": 257,
+    "numeric_fields_compared": 154,
+    "maximum_absolute_error": "4.98341618E-9",
+    "passed": true
+  },
+  {
+    "quarter": "FY2025-Q2",
+    "forecast_run_id": 263,
+    "numeric_fields_compared": 154,
+    "maximum_absolute_error": "4.99510133E-9",
+    "passed": true
+  },
+  {
+    "quarter": "FY2025-Q3",
+    "forecast_run_id": 269,
+    "numeric_fields_compared": 154,
+    "maximum_absolute_error": "4.99134797E-9",
+    "passed": true
+  },
+  {
+    "quarter": "FY2025-Q4",
+    "forecast_run_id": 275,
+    "numeric_fields_compared": 154,
+    "maximum_absolute_error": "4.96562790E-9",
+    "passed": true
+  },
+  {
+    "quarter": "FY2026-Q1",
+    "forecast_run_id": 281,
+    "numeric_fields_compared": 154,
+    "maximum_absolute_error": "4.963176488E-9",
+    "passed": true
+  },
+  {
+    "quarter": "FY2026-Q2",
+    "forecast_run_id": 287,
+    "numeric_fields_compared": 154,
+    "maximum_absolute_error": "4.95154055E-9",
+    "passed": true
+  }
+]

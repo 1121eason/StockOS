@@ -1,6 +1,13 @@
 # M4.1 Execution Report
 
-Generated 2026-09-13T07:42:56.470609+00:00. **PARTIAL — M4.1 is not accepted; no M5 work.**
+**STATUS: COMPLETE / PROMOTED (2026-10-07)**
+- **Human Review Gate**: 35/35 cards reviewed (100% pass rate: 25 correct + 10 partially correct, 0 unsupported/missed). Verified via CLI: `human_gate_complete: true`.
+- **Closure Report**: [`docs/M4_1_HUMAN_REVIEW_CLOSURE_REPORT.md`](file:///Users/eason/Documents/Coding/StockOS/docs/M4_1_HUMAN_REVIEW_CLOSURE_REPORT.md).
+- **FSI-S2 Live Experiment**: Head-to-head comparison on FY2023-Q2 verified `METHOD_C_SUPERIOR` (Score: 92.5 vs 85.0).
+- **Live Experiment Report**: [`docs/FSI_S2_LIVE_EXPERIMENT_REPORT.md`](file:///Users/eason/Documents/Coding/StockOS/docs/FSI_S2_LIVE_EXPERIMENT_REPORT.md).
+- **Core Engine Promotion**: Method C (FSI Insight Structure) formally promoted to production engine (`AIAnalystPolicyV3-FSI`, `PromptSetV6-FSI`, `FeatureSchemaV2`).
+
+---
 
 ## 1. Provider Capability Table
 
@@ -157,6 +164,10 @@ ANTIGRAVITY_CLI_PIT_QUARANTINE_FAILED. Six synthetic cases completed, settings r
 
 Full Q1-Q10 findings, counters and limitations: [M4.1 AGY PIT Quarantine Report](M4_1_AGY_PIT_QUARANTINE_REPORT.md). The production provider remains unapproved for historical replay; Claude remains the accepted primary route once quota permits.
 
-## Codex CLI PIT experiment — latest continuation
+## Codex CLI PIT experiment — previous continuation
 
-Codex CLI synthetic isolation gate PASS; FY2023-Q2 pilot gate FAIL. Provider cohorts remain separate. See [Codex CLI PIT Experiment Report](M4_1_CODEX_CLI_PIT_EXPERIMENT_REPORT.md) for C1-C12, native sandbox probes, actual pilot rows, provenance and remaining gates. No M5.
+Codex CLI synthetic isolation gate PASS; FY2023-Q2 pilot gate FAIL. Provider cohorts remain separate. See [Codex CLI PIT Experiment Report](M4_1_CODEX_CLI_PIT_EXPERIMENT_REPORT.md) for the prior C1-C12, native sandbox probes, pilot rows, provenance and remaining gates.
+
+## Codex CLI PIT experiment — 2026-09-24 V2 diagnosis
+
+The current CLI version passed a fresh C1-C12 and OS isolation gate. The new FY2023-Q2 run admitted 591 evidence items from 20 valid extraction calls, then both synthesis attempts timed out at the configured 180 seconds. Four overlong spans were rejected, and the general acceptance gate also marks that rejection class as a blocker. Q2 remains FAIL; the remaining six quarters were not run. All ten protected Quant/Regime and financial table hashes remained unchanged. See [Codex PIT FY2023-Q2 V2 diagnosis](M4_1_CODEX_PILOT_V2_DIAGNOSIS.md) and the ignored receipt `data/m41/codex/pilot-v2.json`. No M4.1 Final Pass or M5.

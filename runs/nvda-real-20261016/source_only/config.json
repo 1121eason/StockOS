@@ -1,0 +1,16 @@
+{
+  "canonical_commit": "cbb78db1ea0fe8fef8565d855605c7696cb13f3c",
+  "ticker": "NVDA",
+  "valuation_quarter": "FY2025-Q2",
+  "valuation_date": "2024-08-29",
+  "backtest_start": "2022-08-26",
+  "backtest_end": "2025-08-29",
+  "initial_capital_usd": 100000.0,
+  "annual_cash_rate": 0.04,
+  "commission_bps": 5.0,
+  "slippage_bps": 5.0,
+  "execution_delay_sessions": 1,
+  "strategies": ["NaiveDCFPolicy", "FixedAllocationPolicy", "BuyAndHoldPolicy"],
+  "dividends": "excluded: matched split-adjusted price-return comparison",
+  "classification": "retrospective_reconstructed_diagnostic_not_out_of_sample"
+}

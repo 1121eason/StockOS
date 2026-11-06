@@ -1,4 +1,29 @@
-# AIAnalystPolicyV1 — NVIDIA AI Analyst
+# AI Analyst — NVIDIA AI Analyst
+
+Current contract: AIAnalystPolicyV3-FSI, PromptSetV6-FSI and FeatureSchemaV2. Existing V1/V2/V3/V4/V5/V6 runs and snapshots remain immutable and are not reinterpreted under V6-FSI.
+
+## FSI (Financial Statement Insight) Structure Upgrade
+
+Promoted following empirical verification in the FSI-S2 live head-to-head experiment (`METHOD_C_SUPERIOR`, Score 92.5 vs 85.0):
+1. **Fact vs Interpretation Separation**: Distinguishes reported historical facts, management statements, and qualitative interpretation without borrowing cross-topic evidence.
+2. **Causal & Market Dynamics Distinction**: Explicitly decouples technical benchmark leadership (e.g., MLPerf scores) from commercial distribution, channel turnover, and export regulatory barriers in `competition_outlook`.
+3. **Realized vs Boilerplate Distinction**: Separates realized price increases/erosion from hypothetical boilerplate risk disclosures in `pricing_power`.
+4. **Guard G Invariants**: Non-zero features strictly require at least one supporting evidence item matching the expected direction; overlapping roles and invalid keys are fail-closed rejected.
+
+
+## Single-quarter PIT package
+
+Before a Codex request, the deterministic context and already-admitted narrative blocks are serialized as PITQuarterPackageV1. Its manifest binds the fiscal quarter, information cutoff, forecast run, source IDs and hashes, publication/availability times, availability evidence IDs, block IDs, and hashes of every package file. financials.json, guidance.json, and regime.json are allowlisted projections of the existing PIT Quant/Regime context; the package builder does not query valuations, prices, returns, outcome labels, databases, or other AI runs. Sources and block timestamps after cutoff, mismatched source hashes, and Regime/forecast run mismatches fail closed.
+
+Codex extraction calls retain the 180-second operation limit; synthesis and challenge calls use a 600-second limit to accommodate larger stage payloads. A call that still times out remains invalid and cannot produce an accepted quarter snapshot. The Codex CLI receives only its current stage payload while its ephemeral working directory contains that quarter package, system_policy.md, and output_schema.json. Package files use mode 0400 and directories use mode 0500 during inference. The restricted qve_pit profile is read-only, web search is disabled, MCP is empty, approvals are never requested, and any observed tool or permission attempt terminates the call. The repository and database are not mounted into the inference directory. The official Codex subscription transport itself must contact its provider; command subprocess networking and independent browsing/retrieval are denied. This distinction is recorded in each call receipt.
+
+A modern model's training may contain future events. The package restricts retrieval but does not remove pretrained knowledge; only evidence-gated claims can enter the snapshot, and human review remains required.
+
+## Speaker attribution V2
+
+Every extracted span carries speaker_status (verified or unknown) and an optional speaker_role. A verified name must exactly match speaker metadata produced by the source parser. If the parser cannot establish identity, the contract requires speaker=null and speaker_status=unknown. speaker_role=NVIDIA management is admitted only when parser metadata establishes that role. The wrapper never repairs a guessed name into source-level attribution. A guessed attribution is retained as a rejected claim; the same block/span cannot re-enter formal evidence in the same run.
+
+Quarter completion is evaluated by a versioned, general gate. A rejected candidate remains rejected and audit-retained. A quarantined rejection alone does not fail the quarter when the snapshot, complete FeatureSchemaV2 coverage (with unsupported features explicitly missing), mandatory upside/downside/regime challenges, applicable anomaly challenge, PIT checks, and evidence links all pass. Unknown rejection reasons, candidate reuse, invalid provider calls, or any PIT/source/claim leakage fail closed. The policy applies uniformly across quarters and does not lower evidence-admission requirements.
 
 Quant calculates. AI interprets. M1–M3.1 are PM accepted. M4 reads, extracts, interprets and challenges official disclosures; it cannot calculate or change forecasts, valuation, regime, Cycle Score, signals or allocations. No return fitting or cross-company intelligence is introduced.
 
@@ -38,9 +63,11 @@ Zero is permitted only for evidence-backed neutrality/mixed evidence. No evidenc
 
 ## Evidence and contradictions
 
-Pass 1 stores exact short span, block/section/page pointer, source ID/hash, span hash, publication/availability, topic, speaker when substantiated, implication, statement type and extraction certainty. Spans must be literal substrings of the specific request's eligible block, at most 55 words/500 characters. Unknown IDs, fabricated quotes, unsupported speakers and unsafe source spans are quarantined in `ai_unsupported_claims`. Duplicate spans are deduplicated.
+Pass 1 stores exact short span, block/section/page pointer, source ID/hash, span hash, publication/availability, topic, verified/unknown speaker status, parser-backed role when available, implication, statement type and extraction certainty. Spans must be literal substrings of the specific request's eligible block, at most 80 whitespace-separated words/500 characters. PromptSetV4 and later ask for complete sentence or clause spans under 400 characters and exact Unicode copying to reduce boundary truncation; source matching remains literal and fail-closed. Overlong candidates are rejected and retained in the rejection ledger; a verified, isolated overlong candidate alone does not fail an otherwise complete quarter. Unknown IDs, fabricated quotes, unsupported speakers and unsafe source spans are quarantined in `ai_unsupported_claims`. Duplicate spans are deduplicated.
 
 Pass 2 saves supporting and contradicting references separately with a normalized join table. The wrapper adds opposing/mixed Pass 1 evidence for the same topic even if synthesis omitted it. Favorable/adverse signed assessments require a matching implication. Narrative summaries/challenges require admitted evidence references. Interpretation is explicitly a hypothesis, not verified causality.
+
+PromptSetV6 supplies `feature_evidence_keys` for all 28 feature names, derived solely from the current admitted evidence topics without changing quotes, attribution or polarity. Both supporting and contradicting references must belong to the candidate's exact topic. Section summaries may span topics. Empty groups remain missing; a nonempty group is an opportunity to assess the feature, not permission to fabricate a neutral value. The existing topic, narrative, direction and contradiction guards remain unchanged. The separate `run_codex_pilot_v6.py` entry point pins V6 while retaining the same fixed Q2 sources, cutoff, package, model and receipt gates; the V5 entry point retains its V5 prompt pin.
 
 Source-pointer validation proves that a quote exists; it does not by itself prove semantic entailment of a model's interpretation. Human review remains required to measure unsupported conclusions and omissions. No zero-hallucination claim is made from schema validation alone.
 
@@ -60,7 +87,7 @@ Model-authored summaries/rationales/descriptions cannot introduce numeric prose.
 
 Guidance semantic features summarize demand/management/guidance visibility without rewriting numeric guidance. `combined_credibility_view` displays existing Quant guidance accuracy alongside the AI credibility signal. Its combined score is NULL and research-only; the AI signal is not a standalone management-credibility score.
 
-Challenges are upside/downside/anomaly/regime/adjustment with direction, affected model variable, horizon, evidence IDs and wrapper confidence. Anomaly explanations must reference an existing context anomaly code and do not clear that code. Structural interpretation is evidence-bound, not an automatic reclassification. Model proposals persist target model/variable, rationale, evidence, confidence and status `proposed`; suggested numeric ranges are NULL in V1. There is no automatic acceptance or application endpoint. Future review workflow may append reviewed/rejected/accepted_for_future_policy decisions under a later policy; these names do not authorize M4 to update Quant.
+Challenges are upside/downside/anomaly/regime/adjustment with direction, affected model variable, horizon, evidence IDs and wrapper confidence. Every quarter requires distinct, evidence-backed `upside`, `downside`, and `regime` challenge kinds; a downward `adjustment` does not substitute for `downside`. Challenge descriptions must omit digits and fiscal-quarter labels because the narrative guard rejects them. Anomaly explanations must reference an existing context anomaly code and do not clear that code. Structural interpretation is evidence-bound, not an automatic reclassification. Model proposals persist target model/variable, rationale, evidence, confidence and status `proposed`; suggested numeric ranges are NULL in V1. There is no automatic acceptance or application endpoint. Future review workflow may append reviewed/rejected/accepted_for_future_policy decisions under a later policy; these names do not authorize M4 to update Quant.
 
 ## Injection, versioning and provider abstraction
 

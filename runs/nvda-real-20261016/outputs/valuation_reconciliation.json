@@ -1,0 +1,132 @@
+[
+  {
+    "quarter": "FY2023-Q2",
+    "forecast_run_id": 215,
+    "valuation_id": 106,
+    "dcf_computed": "55.05397503",
+    "dcf_stored": "55.05397503",
+    "absolute_difference": "0.00000000",
+    "temporal_checks": 814,
+    "passed": true
+  },
+  {
+    "quarter": "FY2023-Q3",
+    "forecast_run_id": 221,
+    "valuation_id": 109,
+    "dcf_computed": "102.32328246",
+    "dcf_stored": "102.32328246",
+    "absolute_difference": "0.00000000",
+    "temporal_checks": 917,
+    "passed": true
+  },
+  {
+    "quarter": "FY2023-Q4",
+    "forecast_run_id": 227,
+    "valuation_id": 112,
+    "dcf_computed": "122.33498763",
+    "dcf_stored": "122.33498763",
+    "absolute_difference": "0.00000000",
+    "temporal_checks": 1099,
+    "passed": true
+  },
+  {
+    "quarter": "FY2024-Q1",
+    "forecast_run_id": 233,
+    "valuation_id": 115,
+    "dcf_computed": "270.01732833",
+    "dcf_stored": "270.01732833",
+    "absolute_difference": "0.00000000",
+    "temporal_checks": 1201,
+    "passed": true
+  },
+  {
+    "quarter": "FY2024-Q2",
+    "forecast_run_id": 239,
+    "valuation_id": 118,
+    "dcf_computed": "227.59349624",
+    "dcf_stored": "227.59349624",
+    "absolute_difference": "0.00000000",
+    "temporal_checks": 1303,
+    "passed": true
+  },
+  {
+    "quarter": "FY2024-Q3",
+    "forecast_run_id": 245,
+    "valuation_id": 121,
+    "dcf_computed": "195.63748819",
+    "dcf_stored": "195.63748819",
+    "absolute_difference": "0.00000000",
+    "temporal_checks": 1405,
+    "passed": true
+  },
+  {
+    "quarter": "FY2024-Q4",
+    "forecast_run_id": 251,
+    "valuation_id": 124,
+    "dcf_computed": "306.09003811",
+    "dcf_stored": "306.09003811",
+    "absolute_difference": "0.00000000",
+    "temporal_checks": 1587,
+    "passed": true
+  },
+  {
+    "quarter": "FY2025-Q1",
+    "forecast_run_id": 257,
+    "valuation_id": 127,
+    "dcf_computed": "494.76229055",
+    "dcf_stored": "494.76229055",
+    "absolute_difference": "0.00000000",
+    "temporal_checks": 1690,
+    "passed": true
+  },
+  {
+    "quarter": "FY2025-Q2",
+    "forecast_run_id": 263,
+    "valuation_id": 130,
+    "dcf_computed": "70.71863746",
+    "dcf_stored": "70.71863746",
+    "absolute_difference": "0.00000000",
+    "temporal_checks": 1793,
+    "passed": true
+  },
+  {
+    "quarter": "FY2025-Q3",
+    "forecast_run_id": 269,
+    "valuation_id": 133,
+    "dcf_computed": "127.65263128",
+    "dcf_stored": "127.65263128",
+    "absolute_difference": "0.00000000",
+    "temporal_checks": 1896,
+    "passed": true
+  },
+  {
+    "quarter": "FY2025-Q4",
+    "forecast_run_id": 275,
+    "valuation_id": 136,
+    "dcf_computed": "114.87589721",
+    "dcf_stored": "114.87589721",
+    "absolute_difference": "0.00000000",
+    "temporal_checks": 2079,
+    "passed": true
+  },
+  {
+    "quarter": "FY2026-Q1",
+    "forecast_run_id": 281,
+    "valuation_id": 139,
+    "dcf_computed": "123.78416462",
+    "dcf_stored": "123.78416462",
+    "absolute_difference": "0.00000000",
+    "temporal_checks": 2182,
+    "passed": true
+  },
+  {
+    "quarter": "FY2026-Q2",
+    "forecast_run_id": 287,
+    "valuation_id": 142,
+    "dcf_computed": "139.07519814",
+    "dcf_stored": "139.07519814",
+    "absolute_difference": "0.00000000",
+    "temporal_checks": 2285,
+    "passed": true
+  }
+]

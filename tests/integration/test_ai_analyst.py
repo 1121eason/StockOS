@@ -1,9 +1,13 @@
 """Synthetic providers only: these fixtures must never be reported as NVIDIA AI results."""
 
 import ast
+import hashlib
+import importlib.util
+import json
 from copy import deepcopy
 from datetime import timedelta
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 from sqlalchemy import event, func, select, text
@@ -11,6 +15,13 @@ from sqlalchemy.exc import DBAPIError
 from test_regime import prepare as quant_prepare
 from test_research import synthetic as synthetic
 
+from valuation_engine.ai import codex_pit
+from valuation_engine.ai.attempt_journal import AttemptJournal
+from valuation_engine.ai.cli_provider import CodexCLIProvider
+from valuation_engine.ai.codex_pit import MODEL as CODEX_MODEL
+from valuation_engine.ai.codex_pit import POLICY as CODEX_POLICY
+from valuation_engine.ai.codex_pit import POLICY_HASH
+from valuation_engine.ai.contracts import PROMPT_VERSION
 from valuation_engine.ai.provider import AIProvider, RecordedProvider
 from valuation_engine.ai.service import analyze, prepare
 from valuation_engine.db.schema import (
@@ -52,6 +63,8 @@ class FixtureProvider(AIProvider):
                         "block_id": b["block_id"],
                         "span": "Demand for our products remains strong across customers.",
                         "speaker": None,
+                        "speaker_status": "unknown",
+                        "speaker_role": None,
                         "topic": "demand_momentum",
                         "implication": "positive",
                         "certainty": "explicit",
@@ -62,6 +75,8 @@ class FixtureProvider(AIProvider):
                         "block_id": b["block_id"],
                         "span": "Some customers are delaying deployments while optimizing capacity.",
                         "speaker": None,
+                        "speaker_status": "unknown",
+                        "speaker_role": None,
                         "topic": "demand_momentum",
                         "implication": "negative",
                         "certainty": "qualified",
@@ -141,6 +156,182 @@ def setup(db, synthetic, tmp_path):
     )
     db.flush()
     return runs[-1]
+
+
+def load_codex_pilot_runner():
+    path = Path(__file__).resolve().parents[2] / "scripts/run_codex_pilot_v5.py"
+    spec = importlib.util.spec_from_file_location("codex_pilot_v5_context_regression", path)
+    assert spec and spec.loader
+    runner = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(runner)
+    return runner
+
+
+def runner_expected_summary(runner, context):
+    quant_context = context["quant_context"]
+    manifest = runner.build_package(context)["manifest"]
+    information_cutoff = quant_context["information_cutoff"]
+    if hasattr(information_cutoff, "isoformat"):
+        information_cutoff = information_cutoff.isoformat()
+    source_ids = [
+        row["source_document_id"] for row in context["sources"]["documents"]
+    ]
+    return {
+        "quarter": quant_context["quarter"],
+        "information_cutoff": information_cutoff,
+        "source_document_ids": runner.normalize_source_ids(source_ids),
+        "package_version": manifest["package_version"],
+        "source_count": manifest["source_count"],
+        "block_count": manifest["block_count"],
+        "package_hash": manifest["package_hash"],
+        "policy_version": runner.POLICY_VERSION,
+        "prompt_version": runner.PROMPT_VERSION,
+        "schema_version": runner.SCHEMA_VERSION,
+        "requested_model": runner.MODEL,
+    }
+
+
+class PackageCapturingCodex(FixtureProvider):
+    provider_name = "codex_cli"
+    model_name = model_version = CODEX_MODEL
+    settings = {
+        "transport_version": "CLITransportV1",
+        "auth_mode": "chatgpt_subscription",
+        "cli_version": codex_pit.VERSION,
+        "requested_model": CODEX_MODEL,
+    }
+
+    def __init__(self):
+        super().__init__()
+        self.package_contexts = []
+        self.prompts = []
+
+    def request_with_package(self, stage, exact_prompt, package_context):
+        self.package_contexts.append(deepcopy(package_context))
+        self.prompts.append((stage, deepcopy(exact_prompt)))
+        raw = super().request(stage, exact_prompt)
+        raw["execution_metadata"] = {
+            "auth_mode": "chatgpt_subscription",
+            "requested_model": self.model_name,
+            "cli_version": self.settings["cli_version"],
+        }
+        return raw
+
+
+def test_approved_runner_context_is_the_only_context_sent_to_provider(
+    db, synthetic, tmp_path, monkeypatch
+):
+    runner = load_codex_pilot_runner()
+    quant = setup(db, synthetic, tmp_path)
+    approved_context = prepare(db, quant, tmp_path)
+    approved_hash = digest(approved_context)
+    monkeypatch.setattr(
+        runner, "EXPECTED_Q2_INPUTS", runner_expected_summary(runner, approved_context)
+    )
+    input_check = runner.verify_q2_inputs(approved_context)
+    assert input_check["status"] == "PASS"
+    context_path = tmp_path / "approved-context.json"
+    runner.save(context_path, approved_context)
+    saved_context = json.loads(context_path.read_text())
+
+    changed_source = document(
+        db,
+        tmp_path / "raw",
+        b"<div class=\"article-body\"><p>Unapproved source added after runner approval with new market commentary.</p></div>",
+        url="https://nvidianews.nvidia.com/news/unapproved-after-runner-approval",
+        company_id=quant.company_id,
+        provider="synthetic test fixture",
+        kind="Earnings Release",
+        published_at=quant.information_cutoff,
+    )
+    add_evidence(
+        db,
+        changed_source,
+        changed_source,
+        quant.information_cutoff,
+        "exact",
+        quant.information_cutoff,
+        scopes=("ai_narrative",),
+    )
+    db.flush()
+    drifted_context = prepare(db, quant, tmp_path)
+    assert digest(drifted_context) != approved_hash
+    assert runner.verify_q2_inputs(drifted_context)["status"] == "FAIL"
+
+    provider = PackageCapturingCodex()
+    snapshot = runner.analyze_approved_context(
+        db,
+        quant,
+        provider,
+        tmp_path,
+        approved_context,
+        approved_hash,
+    )
+    assert snapshot is not None
+    run = db.get(AIAnalysisRun, snapshot.analysis_run_id)
+    assert run is not None
+    assert run.context_json == saved_context == approved_context
+    assert provider.package_contexts
+    assert all(package == saved_context for package in provider.package_contexts)
+    approved_source_ids = {row["source_document_id"] for row in saved_context["sources"]["documents"]}
+    assert set(run.source_document_ids) == approved_source_ids
+    assert all(
+        block["block_id"] in {source["block_id"] for source in saved_context["sources"]["blocks"]}
+        for stage, prompt_value in provider.prompts
+        if stage == "extract"
+        for block in prompt_value["untrusted_data"]["blocks"]
+    )
+
+
+def test_mutated_approved_package_is_rejected_before_provider_call(db, synthetic, tmp_path, monkeypatch):
+    runner = load_codex_pilot_runner()
+    quant = setup(db, synthetic, tmp_path)
+    approved_context = prepare(db, quant, tmp_path)
+    monkeypatch.setattr(
+        runner, "EXPECTED_Q2_INPUTS", runner_expected_summary(runner, approved_context)
+    )
+    assert runner.verify_q2_inputs(approved_context)["status"] == "PASS"
+    approved_hash = digest(approved_context)
+    mutated_context = deepcopy(approved_context)
+    mutated_context["quarter_package_manifest"]["package_hash"] = "0" * 64
+    provider = PackageCapturingCodex()
+    before = db.query(AIAnalysisRun).count()
+
+    with pytest.raises(ValueError, match="approved context hash"):
+        runner.analyze_approved_context(
+            db,
+            quant,
+            provider,
+            tmp_path,
+            mutated_context,
+            approved_hash,
+        )
+
+    assert provider.package_contexts == []
+    assert db.query(AIAnalysisRun).count() == before
+
+
+def test_synthesis_topic_index_reaches_provider_and_persisted_call(db, synthetic, tmp_path):
+    quant = setup(db, synthetic, tmp_path)
+
+    class IndexedProvider(FixtureProvider):
+        def request(self, stage, exact):
+            if stage == "synthesize":
+                payload = exact["untrusted_data"]
+                index = payload["feature_evidence_keys"]
+                assert index["demand_momentum"] == sorted(e["key"] for e in payload["evidence"])
+                assert len(index["demand_momentum"]) == 2
+                assert index["inventory_quality"] == []
+            return super().request(stage, exact)
+
+    snapshot = analyze(db, quant, IndexedProvider())
+    assert snapshot is not None
+    assert snapshot.pricing_power is None
+    assert snapshot.metadata_json["features"]["demand_momentum"]["contradicting_evidence"]
+    call = db.scalar(select(AIProviderCall).where(AIProviderCall.stage == "synthesize"))
+    payload = call.exact_prompt["untrusted_data"]
+    assert payload["feature_evidence_keys"]["demand_momentum"] == ["0:negative", "0:positive"]
+    assert call.request_hash == digest(["synthesize", call.exact_prompt])
 
 
 def test_ai_pit_price_outcome_injection_and_contradiction(db, synthetic, tmp_path):
@@ -260,7 +451,7 @@ def test_cli_identity_and_audit_metadata(db, synthetic, tmp_path, monkeypatch, m
         metadata = call.raw_output["execution_metadata"]
         assert metadata["source_document_ids"] and metadata["source_hashes"]
         assert metadata["prompt_hash"] == call.request_hash
-        assert metadata["prompt_version"] == "PromptSetV1"
+        assert metadata["prompt_version"] == PROMPT_VERSION
         assert metadata["started_at"] and metadata["completed_at"]
     assert original == [(r.id, r.confirmed_regime) for r in db.scalars(select(RegimeSnapshot))]
 
@@ -414,3 +605,109 @@ def test_latent_future_claim_not_in_corpus_is_rejected(db, synthetic, tmp_path):
         select(AIUnsupportedClaim).where(AIUnsupportedClaim.reason == "span_not_in_source")
     )
     assert not list(db.scalars(select(AIAnalystSnapshot)))
+
+
+def test_unknown_codex_termination_stops_retries_and_later_stages(db, synthetic, tmp_path, monkeypatch):
+    quant = setup(db, synthetic, tmp_path)
+    from valuation_engine.ai import codex_pit
+
+    journal = SimpleNamespace(process_state_unknown=True)
+    provider = CodexCLIProvider(CODEX_MODEL, executable="synthetic-fake-codex")
+    provider._attempt_journal = journal
+    provider._pit_approved = {
+        "gate": "PASS",
+        "gates": {f"C{index}": "PASS" for index in range(1, 13)},
+        "policy_hash": POLICY_HASH,
+        "transport_policy": CODEX_POLICY,
+        "model": CODEX_MODEL,
+        "historical_data_sent": False,
+        "configuration_unchanged": True,
+        "configuration_hash_before": "synthetic-config",
+        "configuration_hash_after": "synthetic-config",
+    }
+    subprocess_starts = []
+    inference_starts = []
+
+    def forbidden_subprocess(*args, **kwargs):
+        subprocess_starts.append(args)
+        raise AssertionError("unknown process state must block subprocess startup")
+
+    def forbidden_inference(*args, **kwargs):
+        inference_starts.append(args)
+        raise AssertionError("unknown process state must block inference startup")
+
+    monkeypatch.setattr(codex_pit.subprocess, "run", forbidden_subprocess)
+    monkeypatch.setattr(codex_pit, "call", forbidden_inference)
+
+    assert analyze(db, quant, provider, tmp_path, refresh=True) is None
+    calls = list(db.scalars(select(AIProviderCall).order_by(AIProviderCall.id)))
+    assert len(calls) == 1
+    assert calls[0].stage == "extract"
+    assert calls[0].attempt == 1
+    assert calls[0].raw_output["execution_metadata"]["failure_kind"] == "termination_unconfirmed"
+    assert subprocess_starts == []
+    assert inference_starts == []
+
+
+@pytest.mark.parametrize("launch_error", [PermissionError, FileNotFoundError])
+def test_codex_launch_failure_survives_provider_and_service_recording(
+    db, synthetic, tmp_path, monkeypatch, launch_error
+):
+    quant = setup(db, synthetic, tmp_path)
+    provider = CodexCLIProvider(CODEX_MODEL, executable=str(tmp_path / "synthetic-codex"))
+    provider.executable = str(tmp_path / "synthetic-codex")
+    provider.settings["cli_version"] = codex_pit.VERSION
+    provider._pit_approved = {
+        "gate": "PASS",
+        "gates": {f"C{index}": "PASS" for index in range(1, 13)},
+        "policy_hash": POLICY_HASH,
+        "transport_policy": CODEX_POLICY,
+        "model": CODEX_MODEL,
+        "historical_data_sent": False,
+        "configuration_unchanged": True,
+        "configuration_hash_before": "synthetic-config",
+        "configuration_hash_after": "synthetic-config",
+    }
+    journal = AttemptJournal(tmp_path / "attempts", purpose="synthetic-launch-failure")
+    provider._attempt_journal = journal
+    version_checks = []
+    launch_attempts = []
+    secret = "synthetic-sensitive-launch-message"
+
+    def version_success(argv, **kwargs):
+        version_checks.append(argv)
+        return codex_pit.subprocess.CompletedProcess(
+            argv, 0, stdout=(codex_pit.VERSION + "\n").encode(), stderr=b""
+        )
+
+    def launch_failure(argv, **kwargs):
+        launch_attempts.append(argv)
+        raise launch_error(secret)
+
+    monkeypatch.setattr(codex_pit, "subscription_environment", lambda: {})
+    monkeypatch.setattr(codex_pit.subprocess, "run", version_success)
+    monkeypatch.setattr(codex_pit.subprocess, "Popen", launch_failure)
+
+    try:
+        assert analyze(db, quant, provider, tmp_path, refresh=True) is None
+    finally:
+        journal.finish(status="failed", failure_kind="process_launch_failure")
+
+    calls = list(db.scalars(select(AIProviderCall).order_by(AIProviderCall.id)))
+    assert len(calls) == 2  # Keep the existing bounded two-attempt retry policy.
+    assert len(version_checks) == len(launch_attempts) == 2
+    for call_row in calls:
+        metadata = call_row.raw_output["execution_metadata"]
+        assert metadata["failure_kind"] == "process_launch_failure"
+        assert metadata["launch_error_type"] == launch_error.__name__
+        assert metadata["started_at"] is None
+        assert metadata["launch_requested_at"]
+        assert metadata["completed_at"]
+        assert metadata["exit_code"] is None
+        empty_stream_hash = hashlib.sha256(b"").hexdigest()
+        assert metadata["raw_response_hash"] == empty_stream_hash
+        assert metadata["stderr_hash"] == empty_stream_hash
+    progress = journal.progress_path.read_text()
+    assert '"event": "inference_started"' not in progress
+    persisted = json.dumps([row.raw_output for row in calls], sort_keys=True)
+    assert secret not in persisted

@@ -1,0 +1,407 @@
+{
+  "quarter": "FY2025-Q2",
+  "checkpoint": "2024-08-29 13:30:00+00:00",
+  "forecast_run_id": 263,
+  "valuation_id": 130,
+  "currency": "USD",
+  "financial_unit": "USD (not millions)",
+  "market_price": "121.36000061",
+  "balance_cash": "8563000000.00000000",
+  "balance_debt": "8461000000.00000000",
+  "shares": {
+    "observation_id": 48,
+    "share_count": "24530000000.00000000",
+    "original_share_count": "24530000000.00000000",
+    "shares_as_of_date": "2024-08-23",
+    "published_at": "2024-08-28 21:05:08+00:00",
+    "available_at": "2024-08-28 21:08:08+00:00",
+    "original_split_basis": {
+      "kind": "as_reported",
+      "basis_date": "2024-08-23",
+      "unit": "shares"
+    },
+    "basis_date": "2024-08-29",
+    "basis": "valuation_date_as_traded",
+    "split_factor": "1",
+    "share_class": "common",
+    "source_document_id": 98,
+    "source_url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581024000264/nvda-20240728.htm",
+    "source_hash": "af5d2297eea965341271a23a0d8cb5c52ff9213d654d8f0489da34cec739ead1",
+    "source_type": "sec_cover",
+    "taxonomy_concept": "dei:EntityCommonStockSharesOutstanding",
+    "confidence": "high",
+    "age_days": 6,
+    "corporate_action_ids": [],
+    "selection_policy": "latest eligible economic date; source priority; latest eligible revision; conflict => unavailable",
+    "calculation_version": "pit-shares-1.1-closure"
+  },
+  "source_price": {
+    "value": "121.36000061",
+    "basis": "as_traded",
+    "field": "open",
+    "basis_date": "2024-08-29",
+    "origin": "research_reconstructed",
+    "market_price_id": 1173,
+    "price_basis_id": 1173,
+    "available_at": "2024-08-29 13:30:00+00:00",
+    "retrieved_at": "2026-09-12 09:21:17.072875+00:00",
+    "provider": "Yahoo Chart",
+    "provenance": {
+      "source_document_id": 55,
+      "original_response_hash": "95061f2842275691749f73737b8d26dd5c5409e5c9790ea27b61370dd8b32cee",
+      "provider": "Yahoo Chart",
+      "retrieved_at": "2026-09-12T09:21:17.072875+00:00",
+      "source_bar_hash": "6a25cf4eabdb69be48b2ea6def2d4fb145623e6d0d591ae5fbcc0f19485933a8",
+      "corporate_action_ids": [],
+      "formula": "as_traded = vendor_split_adjusted * subsequent_split_share_factors",
+      "vendor_raw_observed": false,
+      "limitation": "Reconstructed from vendor current-vintage split-adjusted OHLC; not independently observed raw prices",
+      "adjusted_ohlc_policy": "Only adjusted close supplied; other total-return adjusted fields remain null"
+    },
+    "snapshot_kind": "research_reconstruction"
+  },
+  "balance_inputs": {
+    "balance:cash": {
+      "value": "8563000000.00000000",
+      "unit": "USD",
+      "fact_ids": [
+        709
+      ],
+      "available_at": "2024-08-28T20:21:00Z",
+      "formula": "reported",
+      "metadata": {
+        "table_index": 4,
+        "source_label": "cash and cash equivalents",
+        "publication_precision": "date",
+        "share_basis": "original_FY2025-Q2_release",
+        "period_start_method": "NVIDIA last-Sunday-January fiscal calendar; reported end checked",
+        "availability_evidence_id": 55,
+        "evidence_document_id": 45,
+        "information_available_at": "2024-08-28T20:21:00+00:00",
+        "published_at": "2024-08-28T20:20:00+00:00",
+        "timestamp_precision": "minute",
+        "timestamp_source": "https://www.globenewswire.com/news-release/2024/08/28/2937384/0/en/nvidia-announces-financial-results-for-second-quarter-fiscal-2025.html",
+        "timestamp_confidence": "high",
+        "fallback_reason": "Visible timestamp has minute precision; use end of minute",
+        "timezone": "America/New_York",
+        "policy_version": "availability-1.1",
+        "source_document_id": 18,
+        "share_basis_date": "2024-08-28"
+      },
+      "period_end": "2024-07-28",
+      "quarter": "FY2025-Q2",
+      "carried_forward": false
+    },
+    "balance:debt": {
+      "value": "8461000000.00000000",
+      "unit": "USD",
+      "fact_ids": [
+        467,
+        468
+      ],
+      "available_at": "2024-08-28T20:21:00Z",
+      "formula": "debt_current + debt_noncurrent",
+      "metadata": {
+        "formula_version": "normalization-1.1"
+      },
+      "period_end": "2024-07-28",
+      "quarter": "FY2025-Q2",
+      "carried_forward": false
+    }
+  },
+  "formula": "FCFF proxy = EBIT*(1-tax) + (forecast OCF - forecast net income) - capex",
+  "parameters": {
+    "annual_growth": "1.35333625",
+    "recent_yoy": "2.33818994",
+    "recent_sequential": "0.19905698",
+    "acceleration": "-1.39721385",
+    "seasonality": {
+      "1": "0.98269024",
+      "2": "0.96194983",
+      "3": "0.91037681",
+      "4": "0.89739207"
+    },
+    "gross_margin_median": "0.75556767",
+    "gross_margin_trend": "-0.03205548",
+    "opex_growth": "0.11082828",
+    "tax_rate": "0.17000000",
+    "non_operating_income_ratio": "0.01662400",
+    "share_growth": "-0.00164564",
+    "fcf_margin": "0.47929999",
+    "capex_margin": "0.01475525",
+    "cash_conversion_adjustment": "-0.05290023"
+  },
+  "raw_guidance": {
+    "tax_rate": {
+      "id": 106,
+      "midpoint": "0.17000000",
+      "low": "0.16000000",
+      "high": "0.18000000",
+      "basis": "GAAP",
+      "target": "FY2025-Q3",
+      "available_at": "2024-08-28T20:21:00+00:00",
+      "source_document_id": 18,
+      "source_url": "https://nvidianews.nvidia.com/news/nvidia-announces-financial-results-for-second-quarter-fiscal-2025",
+      "source_hash": "7955472fb263c7818573c17573e2b79677d73a500d21fc2ab53bef0c7c0fe20b"
+    },
+    "operating_expenses": {
+      "id": 39,
+      "midpoint": "4300000000.00000000",
+      "low": null,
+      "high": null,
+      "basis": "GAAP",
+      "target": "FY2025-Q3",
+      "available_at": "2024-08-28T20:21:00+00:00",
+      "source_document_id": 18,
+      "source_url": "https://nvidianews.nvidia.com/news/nvidia-announces-financial-results-for-second-quarter-fiscal-2025",
+      "source_hash": "7955472fb263c7818573c17573e2b79677d73a500d21fc2ab53bef0c7c0fe20b"
+    },
+    "gross_margin": {
+      "id": 38,
+      "midpoint": "0.74400000",
+      "low": "0.73900000",
+      "high": "0.74900000",
+      "basis": "GAAP",
+      "target": "FY2025-Q3",
+      "available_at": "2024-08-28T20:21:00+00:00",
+      "source_document_id": 18,
+      "source_url": "https://nvidianews.nvidia.com/news/nvidia-announces-financial-results-for-second-quarter-fiscal-2025",
+      "source_hash": "7955472fb263c7818573c17573e2b79677d73a500d21fc2ab53bef0c7c0fe20b"
+    },
+    "revenue": {
+      "id": 37,
+      "midpoint": "32500000000.00000000",
+      "low": "31850000000.00000000",
+      "high": "33150000000.00000000",
+      "basis": "GAAP",
+      "target": "FY2025-Q3",
+      "available_at": "2024-08-28T20:21:00+00:00",
+      "source_document_id": 18,
+      "source_url": "https://nvidianews.nvidia.com/news/nvidia-announces-financial-results-for-second-quarter-fiscal-2025",
+      "source_hash": "7955472fb263c7818573c17573e2b79677d73a500d21fc2ab53bef0c7c0fe20b"
+    }
+  },
+  "bias_adjusted_guidance": {
+    "revenue": "35592645833.33333333",
+    "gross_margin": "0.75389965",
+    "operating_expenses": "4286535521.23552124"
+  },
+  "explicit_cashflows": [
+    {
+      "year": 1,
+      "fcff_proxy_usd": "79013095712.62164001",
+      "discount_factor": "1.10000000",
+      "present_value_usd": "71830087011.47421819"
+    },
+    {
+      "year": 2,
+      "fcff_proxy_usd": "107466088659.41639240",
+      "discount_factor": "1.21000000",
+      "present_value_usd": "88814949305.30280364"
+    },
+    {
+      "year": 3,
+      "fcff_proxy_usd": "128158940533.40851246",
+      "discount_factor": "1.33100000",
+      "present_value_usd": "96287708890.61496053"
+    },
+    {
+      "year": 4,
+      "fcff_proxy_usd": "142099582236.33676785",
+      "discount_factor": "1.46410000",
+      "present_value_usd": "97055926669.17339516"
+    },
+    {
+      "year": 5,
+      "fcff_proxy_usd": "151604352834.83707647",
+      "discount_factor": "1.61051000",
+      "present_value_usd": "94134375343.73401995"
+    }
+  ],
+  "terminal_value_year5": "2071926155409.44004513",
+  "present_terminal_value": "1286503129697.69827268",
+  "terminal_fraction_of_ev": "0.74166016",
+  "base": {
+    "status": "available",
+    "enterprise_value": "1734626176917.99767015",
+    "equity_value": "1734728176917.99767015",
+    "per_share": "70.71863746",
+    "wacc": "0.10000000",
+    "terminal_growth": "0.02500000",
+    "version": "DCFPolicyV1",
+    "negative_equity_warning": false
+  },
+  "sensitivity": [
+    {
+      "status": "available",
+      "enterprise_value": "2228708009923.91040596",
+      "equity_value": "2228810009923.91040596",
+      "per_share": "90.86057929",
+      "wacc": "0.08000000",
+      "terminal_growth": "0.02000000",
+      "version": "DCFPolicyV1",
+      "negative_equity_warning": false
+    },
+    {
+      "status": "available",
+      "enterprise_value": "2397546987420.11022642",
+      "equity_value": "2397648987420.11022642",
+      "per_share": "97.74353801",
+      "wacc": "0.08000000",
+      "terminal_growth": "0.02500000",
+      "version": "DCFPolicyV1",
+      "negative_equity_warning": false
+    },
+    {
+      "status": "available",
+      "enterprise_value": "2600153760415.55001097",
+      "equity_value": "2600255760415.55001097",
+      "per_share": "106.00308848",
+      "wacc": "0.08000000",
+      "terminal_growth": "0.03000000",
+      "version": "DCFPolicyV1",
+      "negative_equity_warning": false
+    },
+    {
+      "status": "available",
+      "enterprise_value": "1896860930875.06746745",
+      "equity_value": "1896962930875.06746745",
+      "per_share": "77.33236571",
+      "wacc": "0.09000000",
+      "terminal_growth": "0.02000000",
+      "version": "DCFPolicyV1",
+      "negative_equity_warning": false
+    },
+    {
+      "status": "available",
+      "enterprise_value": "2014883288738.16855427",
+      "equity_value": "2014985288738.16855427",
+      "per_share": "82.14371336",
+      "wacc": "0.09000000",
+      "terminal_growth": "0.02500000",
+      "version": "DCFPolicyV1",
+      "negative_equity_warning": false
+    },
+    {
+      "status": "available",
+      "enterprise_value": "2152576039578.45315556",
+      "equity_value": "2152678039578.45315556",
+      "per_share": "87.75695229",
+      "wacc": "0.09000000",
+      "terminal_growth": "0.03000000",
+      "version": "DCFPolicyV1",
+      "negative_equity_warning": false
+    },
+    {
+      "status": "available",
+      "enterprise_value": "1648336332852.90815186",
+      "equity_value": "1648438332852.90815186",
+      "per_share": "67.20091043",
+      "wacc": "0.10000000",
+      "terminal_growth": "0.02000000",
+      "version": "DCFPolicyV1",
+      "negative_equity_warning": false
+    },
+    {
+      "status": "available",
+      "enterprise_value": "1734626176917.99767015",
+      "equity_value": "1734728176917.99767015",
+      "per_share": "70.71863746",
+      "wacc": "0.10000000",
+      "terminal_growth": "0.02500000",
+      "version": "DCFPolicyV1",
+      "negative_equity_warning": false
+    },
+    {
+      "status": "available",
+      "enterprise_value": "1833243141563.81426248",
+      "equity_value": "1833345141563.81426248",
+      "per_share": "74.73889692",
+      "wacc": "0.10000000",
+      "terminal_growth": "0.03000000",
+      "version": "DCFPolicyV1",
+      "negative_equity_warning": false
+    },
+    {
+      "status": "available",
+      "enterprise_value": "1455346555660.88210380",
+      "equity_value": "1455448555660.88210380",
+      "per_share": "59.33341034",
+      "wacc": "0.11000000",
+      "terminal_growth": "0.02000000",
+      "version": "DCFPolicyV1",
+      "negative_equity_warning": false
+    },
+    {
+      "status": "available",
+      "enterprise_value": "1520618766789.97659052",
+      "equity_value": "1520720766789.97659052",
+      "per_share": "61.99432396",
+      "wacc": "0.11000000",
+      "terminal_growth": "0.02500000",
+      "version": "DCFPolicyV1",
+      "negative_equity_warning": false
+    },
+    {
+      "status": "available",
+      "enterprise_value": "1594050004310.20788807",
+      "equity_value": "1594152004310.20788807",
+      "per_share": "64.98785179",
+      "wacc": "0.11000000",
+      "terminal_growth": "0.03000000",
+      "version": "DCFPolicyV1",
+      "negative_equity_warning": false
+    },
+    {
+      "status": "available",
+      "enterprise_value": "1301219640621.28799269",
+      "equity_value": "1301321640621.28799269",
+      "per_share": "53.05020956",
+      "wacc": "0.12000000",
+      "terminal_growth": "0.02000000",
+      "version": "DCFPolicyV1",
+      "negative_equity_warning": false
+    },
+    {
+      "status": "available",
+      "enterprise_value": "1351928749564.13204563",
+      "equity_value": "1352030749564.13204563",
+      "per_share": "55.11743781",
+      "wacc": "0.12000000",
+      "terminal_growth": "0.02500000",
+      "version": "DCFPolicyV1",
+      "negative_equity_warning": false
+    },
+    {
+      "status": "available",
+      "enterprise_value": "1408272203945.06988224",
+      "equity_value": "1408374203945.06988224",
+      "per_share": "57.41435809",
+      "wacc": "0.12000000",
+      "terminal_growth": "0.03000000",
+      "version": "DCFPolicyV1",
+      "negative_equity_warning": false
+    }
+  ],
+  "reverse_dcf": {
+    "status": "converged",
+    "implied_growth": "0.44421399",
+    "iterations": 36,
+    "residual": "-14.84993152",
+    "relative_residual": "0.00000000",
+    "starting_fcff": "45456345893.43443817",
+    "current_ev": "2976858814963.30000000",
+    "wacc": "0.10000000",
+    "terminal_growth": "0.02500000",
+    "version": "ReverseDCFPolicyV1"
+  },
+  "internal_five_year_fcff_cagr": "0.27239932",
+  "ratios": {
+    "ntm_pe": "32.46244999",
+    "fy1_pe": "42.18464201",
+    "fy2_pe": "26.90366730",
+    "forward_fcf_yield": "0.02733155",
+    "forward_ev_ebit": "27.38839360"
+  },
+  "model_classification": "retrospective_reconstructed_diagnostic_not_out_of_sample"
+}

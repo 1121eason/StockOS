@@ -13,3 +13,11 @@ data/*
 *.db-*
 dist/
 artifacts/
+
+# 只留在本機：第三方網頁原文、驗收證據、產生的報表（2026-11-06）
+runs/*/inputs/raw/
+docs/acceptance/AI_FSI_2026-10-19/
+reports/dashboard.html
+integration/
+runs/*/backend/
+workspaces/*/

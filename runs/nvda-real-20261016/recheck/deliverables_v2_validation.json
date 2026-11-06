@@ -1,0 +1,23 @@
+{
+  "original_outputs_unchanged": true,
+  "metrics_and_ledger_numerically_and_byte_identical": true,
+  "sensitive_path_and_secret_pattern_scan": "passed",
+  "files": {
+    "NVDA_Metrics_v2.csv": {
+      "sha256": "71db9ce7af7e38119c73037292976eaf22c9e08d981a7b298fc0c8977b77ea81",
+      "bytes": 1755
+    },
+    "NVDA_NAV_Chart_v2.html": {
+      "sha256": "71e9e554a5f745a3cb9f06ae6b3cd53408e51deaaeca2a28bdc0e310d7a869b6",
+      "bytes": 34973
+    },
+    "NVDA_Report_v2.zh-TW.md": {
+      "sha256": "6f329081a2559841effdf0cd4655d4e0db95166e8f349b86130466ad7f30f2b7",
+      "bytes": 7475
+    },
+    "NVDA_Trade_Ledger_v2.csv": {
+      "sha256": "d440cacf668d3ecec113647fddb21913a6cbfec86fe0bf4279fadfe8c85ad508",
+      "bytes": 24160
+    }
+  }
+}
