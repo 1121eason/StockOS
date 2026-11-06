@@ -21,3 +21,4 @@ reports/dashboard.html
 integration/
 runs/*/backend/
 workspaces/*/
+local-artifacts/
